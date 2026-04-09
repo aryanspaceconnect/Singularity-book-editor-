@@ -1,0 +1,85 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A book project",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "ownerId", "createdAt", "updatedAt"]
+    },
+    "Log": {
+      "title": "Log",
+      "description": "System and agent logs",
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "content": { "type": "string" },
+        "agentsState": { "type": "string" }
+      },
+      "required": ["timestamp", "content"]
+    },
+    "Agent": {
+      "title": "Agent",
+      "description": "An AI agent in the Hub",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "status": { "type": "string" },
+        "memory": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "role", "status", "createdAt", "updatedAt"]
+    },
+    "Canvas": {
+      "title": "Canvas",
+      "description": "The structured TipTap document JSON",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Book projects"
+    },
+    "/projects/{projectId}/logs/{logId}": {
+      "schema": { "$ref": "#/entities/Log" },
+      "description": "System logs for a project"
+    },
+    "/projects/{projectId}/agents/{agentId}": {
+      "schema": { "$ref": "#/entities/Agent" },
+      "description": "Agents working on a project"
+    },
+    "/projects/{projectId}/canvas/{docId}": {
+      "schema": { "$ref": "#/entities/Canvas" },
+      "description": "Canvas documents for a project"
+    }
+  }
+}
