@@ -135,7 +135,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
           if (data.content.trim().startsWith('<')) {
             // It's HTML
             if (editor.getHTML() !== data.content) {
-              editor.commands.setContent(data.content, false);
+              editor.commands.setContent(data.content, { emitUpdate: false });
             }
           } else {
             // It's JSON
@@ -143,7 +143,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
               const parsed = JSON.parse(data.content);
               const currentContent = editor.getJSON();
               if (JSON.stringify(currentContent) !== JSON.stringify(parsed)) {
-                editor.commands.setContent(parsed, false); 
+                editor.commands.setContent(parsed, { emitUpdate: false });
               }
             } catch (e) {
               console.error("Error parsing canvas content", e);
