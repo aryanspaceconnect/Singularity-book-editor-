@@ -1,5 +1,6 @@
 import { executeToolSandbox } from '../sandbox/index';
 import { saveToolToDatabase, getToolFromDatabase } from '../firebase/index';
+import { MutationLogger } from '../chaos/index';
 
 export interface Tool {
     name: string;
@@ -8,6 +9,7 @@ export interface Tool {
 }
 
 export interface AgentConfig {
+    id: string; // Added ID for Chaos tracking
     name: string;
     mission: string;
     personality: string;
@@ -18,18 +20,25 @@ export interface AgentConfig {
 
 export class Agent {
     public config: AgentConfig;
+    private chaosEngine: MutationLogger | null = null; // Reference to the engine
 
     constructor(config: AgentConfig) {
         this.config = config;
     }
 
     /**
+     * Binds the agent to a specific Chaos Engine / AST workspace
+     */
+    public bindToEngine(engine: MutationLogger) {
+        this.chaosEngine = engine;
+    }
+
+    /**
      * The main thinking loop for the agent.
-     * Based on the prompt, it decides whether to run a tool, create a tool, or just reply.
      */
     async think(prompt: string): Promise<string> {
         const systemPrompt = `
-You are an autonomous AI Agent running within a code execution environment.
+You are an autonomous AI Agent bound to a high-reliability AST Engine (The Matter).
 Name: ${this.config.name}
 Mission: ${this.config.mission}
 Personality: ${this.config.personality}
@@ -39,22 +48,17 @@ ${this.config.abilities.length > 0
     ? this.config.abilities.map(t => `- ${t.name}: ${t.description}`).join('\n')
     : "None"}
 
-Your job is to solve the user's prompt.
-If you need a tool you do not have, you MUST write the JavaScript code for it.
+Your job is to mutate the AST tree incrementally and deterministically to solve the user's prompt.
+You must use the pre-built atomic tools (insertNode, updateNode, deleteNode, moveNode, getTreeState) to interact with the Matter.
 
 Output format instructions:
-If you need to execute an existing tool, reply strictly with JSON:
+If you need to execute an existing tool on the tree, reply strictly with JSON:
 { "action": "use_tool", "tool": "toolName", "args": { "arg1": "val" } }
 
-If you need to create a new tool, reply strictly with JSON:
-{
-  "action": "create_tool",
-  "tool": "toolName",
-  "description": "What it does",
-  "code": "The raw JS code. Must return a value or promise. Uses 'args' object for inputs. No markdown blocks."
-}
+If you need to create a new generic computation tool, reply strictly with JSON:
+{ "action": "create_tool", "tool": "toolName", "description": "What it does", "code": "The raw JS code." }
 
-If you just want to talk, reply strictly with JSON:
+If you just want to talk to the observer, reply strictly with JSON:
 { "action": "reply", "message": "Your text here" }
         `;
 
@@ -78,7 +82,7 @@ If you just want to talk, reply strictly with JSON:
                         { role: "user", content: prompt }
                     ],
                     max_tokens: 4096,
-                    temperature: 0.2, // low temp for better JSON
+                    temperature: 0.1, // very low temp for precise AST operations
                     top_p: 0.95,
                     stream: false,
                 })
@@ -92,13 +96,9 @@ If you just want to talk, reply strictly with JSON:
             const data = await response.json();
             const content = data.choices[0].message.content;
 
-            // Try to extract JSON if the LLM wraps it in markdown blocks
             let jsonString = content.trim();
-            if (jsonString.startsWith('```json')) {
-                jsonString = jsonString.slice(7, -3).trim();
-            } else if (jsonString.startsWith('```')) {
-                jsonString = jsonString.slice(3, -3).trim();
-            }
+            if (jsonString.startsWith('```json')) jsonString = jsonString.slice(7, -3).trim();
+            else if (jsonString.startsWith('```')) jsonString = jsonString.slice(3, -3).trim();
 
             const parsed = JSON.parse(jsonString);
             return this.handleAction(parsed);
@@ -109,9 +109,6 @@ If you just want to talk, reply strictly with JSON:
         }
     }
 
-    /**
-     * Handles the structured action decided by the LLM
-     */
     private async handleAction(actionObj: any): Promise<any> {
         console.log(`[Agent ${this.config.name}] Action chosen:`, actionObj.action);
 
@@ -120,8 +117,17 @@ If you just want to talk, reply strictly with JSON:
         }
 
         if (actionObj.action === "use_tool") {
-            const result = await this.useTool(actionObj.tool, actionObj.args);
-            return `Tool executed successfully. Result: ${JSON.stringify(result)}`;
+            // Check if it's a built-in AST Engine tool
+            const builtinTools = ['insertNode', 'updateNode', 'deleteNode', 'moveNode', 'getTreeState'];
+            if (builtinTools.includes(actionObj.tool)) {
+                if (!this.chaosEngine) throw new Error("Agent is not bound to a Chaos Engine.");
+                const result = this.chaosEngine.executeWithBounds(this.config.id, actionObj.tool, actionObj.args);
+                return `AST Engine Result: ${JSON.stringify(result)}`;
+            }
+
+            // Otherwise it's a dynamic sandbox tool
+            const result = await this.useSandboxTool(actionObj.tool, actionObj.args);
+            return `Sandbox Tool executed successfully. Result: ${JSON.stringify(result)}`;
         }
 
         if (actionObj.action === "create_tool") {
@@ -131,46 +137,23 @@ If you just want to talk, reply strictly with JSON:
                 code: actionObj.code
             };
             await this.learnAbility(newTool);
-
-            // Run the tool immediately after creating it
-            console.log(`[Agent ${this.config.name}] Executing newly created tool: ${newTool.name}`);
-            const result = await this.useTool(newTool.name, actionObj.args || {});
+            const result = await this.useSandboxTool(newTool.name, actionObj.args || {});
             return `Tool created and executed. Result: ${JSON.stringify(result)}`;
         }
 
         return "Unknown action type.";
     }
 
-    /**
-     * Executes a tool from its current abilities in the Sandbox
-     */
-    async useTool(toolName: string, args: any = {}): Promise<any> {
+    async useSandboxTool(toolName: string, args: any = {}): Promise<any> {
         const tool = this.config.abilities.find(t => t.name === toolName);
-        if (!tool) {
-            throw new Error(`Tool ${toolName} not found in agent's abilities.`);
-        }
-
-        console.log(`[Agent ${this.config.name}] Running tool '${toolName}' in sandbox...`);
+        if (!tool) throw new Error(`Tool ${toolName} not found in agent's abilities.`);
+        console.log(`[Agent ${this.config.name}] Running sandbox tool '${toolName}'...`);
         return await executeToolSandbox(tool.code, args);
     }
 
-    /**
-     * Add a newly created tool to abilities and save it to the DB
-     */
     async learnAbility(tool: Tool) {
         this.config.abilities.push(tool);
         console.log(`[Agent ${this.config.name}] Learned new ability: ${tool.name}`);
         await saveToolToDatabase(tool);
-    }
-
-    /**
-     * Checks DB for an existing tool and adds it if found
-     */
-    async loadAbilityFromDB(toolName: string) {
-        const tool = await getToolFromDatabase(toolName);
-        if (tool) {
-            this.config.abilities.push(tool);
-            console.log(`[Agent ${this.config.name}] Loaded existing ability from DB: ${tool.name}`);
-        }
     }
 }
