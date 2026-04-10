@@ -23,7 +23,6 @@ export default function ResearchDialog() {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: query,
-        tools: [{ googleSearch: {} }]
       });
       setResult(response.text || "No results found.");
     } catch (error) {
