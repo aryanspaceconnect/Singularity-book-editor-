@@ -1,10 +1,22 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
+import Typography from '@tiptap/extension-typography';
+import TextAlign from '@tiptap/extension-text-align';
+import Dropcursor from '@tiptap/extension-dropcursor';
+import Placeholder from '@tiptap/extension-placeholder';
+import Focus from '@tiptap/extension-focus';
+import FontFamily from '@tiptap/extension-font-family';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+import CharacterCount from '@tiptap/extension-character-count';
+import { BookTypography, DropCap, PageBreak } from '../lib/tiptap-extensions';
+import { SlashCommands, slashCommandSuggestion } from '../lib/slash-commands';
 import { useEffect, useState } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, List, ListOrdered, Quote } from 'lucide-react';
+import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors } from 'lucide-react';
 import GenerateImageDialog from './GenerateImageDialog';
 import ResearchDialog from './ResearchDialog';
 import QuickIdeasDialog from './QuickIdeasDialog';
@@ -68,6 +80,41 @@ const MenuBar = ({ editor }: { editor: any }) => {
       <Button
         variant="ghost"
         size="icon-sm"
+        onClick={() => editor.chain().focus().setTextAlign('left').run()}
+        className={editor.isActive({ textAlign: 'left' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+      >
+        <AlignLeft className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().setTextAlign('center').run()}
+        className={editor.isActive({ textAlign: 'center' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+      >
+        <AlignCenter className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().setTextAlign('right').run()}
+        className={editor.isActive({ textAlign: 'right' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+      >
+        <AlignRight className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+        className={editor.isActive({ textAlign: 'justify' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+      >
+        <AlignJustify className="h-4 w-4" />
+      </Button>
+
+      <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-800 mx-1" />
+
+      <Button
+        variant="ghost"
+        size="icon-sm"
         onClick={() => editor.chain().focus().toggleBulletList().run()}
         className={editor.isActive('bulletList') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
       >
@@ -89,6 +136,27 @@ const MenuBar = ({ editor }: { editor: any }) => {
       >
         <Quote className="h-4 w-4" />
       </Button>
+
+      <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-800 mx-1" />
+
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().toggleDropCap().run()}
+        className={editor.isActive('paragraph', { dropCap: true }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        title="Toggle Drop Cap"
+      >
+        <Type className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().setPageBreak().run()}
+        className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+        title="Insert Page Break"
+      >
+        <Scissors className="h-4 w-4" />
+      </Button>
       
       <div className="flex-1" />
       <div className="flex items-center gap-2 pr-2">
@@ -108,11 +176,37 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
 
   const editor = useEditor({
-    extensions: [StarterKit, Image],
+    extensions: [
+      StarterKit, 
+      Image,
+      Typography,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+      Dropcursor,
+      Placeholder.configure({
+        placeholder: 'Start writing your book here, or ask the Observer to generate an outline...',
+      }),
+      Focus.configure({
+        className: 'has-focus',
+        mode: 'all',
+      }),
+      FontFamily,
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
+      CharacterCount,
+      BookTypography,
+      DropCap,
+      PageBreak,
+      SlashCommands.configure({
+        suggestion: slashCommandSuggestion,
+      })
+    ],
     content: `<h1>Chapter 1: The Beginning</h1><p>Start writing your book here, or ask the Observer to generate an outline...</p>`,
     editorProps: {
       attributes: {
-        class: 'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg mx-auto focus:outline-none max-w-3xl min-h-[500px] pb-32',
+        class: 'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg mx-auto focus:outline-none max-w-3xl min-h-[500px] pb-32 font-serif',
       },
     },
     onUpdate: ({ editor }) => {
@@ -143,7 +237,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
               const parsed = JSON.parse(data.content);
               const currentContent = editor.getJSON();
               if (JSON.stringify(currentContent) !== JSON.stringify(parsed)) {
-                editor.commands.setContent(parsed, { emitUpdate: false });
+                editor.commands.setContent(parsed, { emitUpdate: false }); 
               }
             } catch (e) {
               console.error("Error parsing canvas content", e);

@@ -129,3 +129,17 @@
     @apply font-sans;
     }
 }
+
+@layer utilities {
+  .drop-cap {
+    @apply first-letter:float-left first-letter:text-7xl first-letter:pr-4 first-letter:font-bold first-letter:text-zinc-900 dark:first-letter:text-zinc-100 first-letter:leading-[0.8] first-letter:mt-2;
+  }
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

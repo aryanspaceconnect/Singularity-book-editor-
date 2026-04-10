@@ -7,6 +7,8 @@ import Canvas from './Canvas';
 import ObserverChat from './ObserverChat';
 import SystemLogger from './SystemLogger';
 import AgentCreatorDialog from './AgentCreatorDialog';
+import ProjectSettingsDialog from './ProjectSettingsDialog';
+import { AIProvider } from '../lib/ai-context';
 
 export default function Desk({ userId }: { userId: string }) {
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -145,51 +147,54 @@ export default function Desk({ userId }: { userId: string }) {
 
   // --- EDITOR VIEW ---
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-zinc-50 dark:bg-black transition-colors duration-200">
-      <SystemLogger projectId={projectId} />
-      
-      {/* Top Navigation Bar */}
-      <div className="h-14 border-b border-zinc-200 dark:border-zinc-800/50 bg-white/80 dark:bg-black/80 backdrop-blur-md flex items-center justify-between px-4 shrink-0 z-10">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setView('dashboard')} className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full">
-            <LayoutDashboard className="h-4 w-4 mr-2" />
-            Dashboard
-          </Button>
-          <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-800" />
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            {projects.find(p => p.id === projectId)?.title || 'Untitled Book'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-zinc-600 dark:text-zinc-400 mr-2">
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-          <AgentCreatorDialog userId={userId} projectId={projectId} />
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setIsObserverOpen(!isObserverOpen)}
-            className={`rounded-full ${isObserverOpen ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Observer
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden p-4 gap-4">
-        {/* Main Canvas */}
-        <div className="flex-1 overflow-hidden bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-200 dark:border-zinc-800/50 shadow-xl dark:shadow-2xl relative">
-          <Canvas projectId={projectId} userId={userId} />
-        </div>
-
-        {/* Sidebar / Chat (Collapsible) */}
-        {isObserverOpen && (
-          <div className="w-96 bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-200 dark:border-zinc-800/50 shadow-xl dark:shadow-2xl flex flex-col shrink-0 overflow-hidden transition-all duration-300 ease-in-out">
-            <ObserverChat projectId={projectId} userId={userId} canvasContent={canvasContent} />
+    <AIProvider userId={userId} projectId={projectId}>
+      <div className="flex flex-col h-full w-full overflow-hidden bg-zinc-50 dark:bg-black transition-colors duration-200">
+        <SystemLogger projectId={projectId} />
+        
+        {/* Top Navigation Bar */}
+        <div className="h-14 border-b border-zinc-200 dark:border-zinc-800/50 bg-white/80 dark:bg-black/80 backdrop-blur-md flex items-center justify-between px-4 shrink-0 z-10">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={() => setView('dashboard')} className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full">
+              <LayoutDashboard className="h-4 w-4 mr-2" />
+              Dashboard
+            </Button>
+            <div className="h-4 w-px bg-zinc-300 dark:bg-zinc-800" />
+            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              {projects.find(p => p.id === projectId)?.title || 'Untitled Book'}
+            </span>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-zinc-600 dark:text-zinc-400 mr-2">
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <ProjectSettingsDialog projectId={projectId} />
+            <AgentCreatorDialog userId={userId} projectId={projectId} />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsObserverOpen(!isObserverOpen)}
+              className={`rounded-full ${isObserverOpen ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}`}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Observer
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-1 overflow-hidden p-4 gap-4">
+          {/* Main Canvas */}
+          <div className="flex-1 overflow-hidden bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-200 dark:border-zinc-800/50 shadow-xl dark:shadow-2xl relative">
+            <Canvas projectId={projectId} userId={userId} />
+          </div>
+
+          {/* Sidebar / Chat (Collapsible) */}
+          {isObserverOpen && (
+            <div className="w-96 bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-200 dark:border-zinc-800/50 shadow-xl dark:shadow-2xl flex flex-col shrink-0 overflow-hidden transition-all duration-300 ease-in-out">
+              <ObserverChat projectId={projectId} userId={userId} canvasContent={canvasContent} />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </AIProvider>
   );
 }

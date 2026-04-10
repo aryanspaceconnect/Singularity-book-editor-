@@ -3,10 +3,9 @@ import { GoogleGenAI, ThinkingLevel, Type, FunctionDeclaration } from '@google/g
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Bot, User, Settings2, Key } from 'lucide-react';
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { useProposals } from '../hooks/useProposals';
-import { Check, X } from 'lucide-react';
+import { useAI } from '../lib/ai-context';
 
 const updateCanvasFunctionDeclaration: FunctionDeclaration = {
   name: "updateCanvasContent",
@@ -28,41 +27,25 @@ export default function ObserverChat({ projectId, userId, canvasContent }: { pro
   const [messages, setMessages] = useState<any[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [apiKey, setApiKey] = useState(process.env.GEMINI_API_KEY || '');
+  const [localApiKey, setLocalApiKey] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const ai = useMemo(() => new GoogleGenAI({ apiKey: apiKey || 'dummy-key' }), [apiKey]);
+  const { ai, observerApiKey, universalApiKey } = useAI();
 
-  const messagesRef = collection(db, 'projects', projectId, 'messages');
-  const { pendingProposals, updateProposal } = useProposals(projectId);
+  useEffect(() => {
+    setLocalApiKey(observerApiKey || '');
+  }, [observerApiKey]);
 
-
-  const handleAcceptProposal = async (proposalId: string, content: string) => {
+  const handleSaveApiKey = async (newKey: string) => {
+    setLocalApiKey(newKey);
     try {
-      // 1. Mark as accepted in the API
-      await updateProposal(proposalId, 'accepted');
-
-      // 2. Append the content to the Canvas in Firebase
-      // TipTap Canvas listens to this doc and will automatically update
-      const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
-      const newHtml = canvasContent ? canvasContent + "\n<p></p>" + content : content;
-
-      await setDoc(docRef, {
-        content: newHtml,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-
-      // 3. Add a message to the chat indicating the action
-      await addDoc(messagesRef, {
-        role: 'assistant',
-        content: `I have appended the proposal to the canvas.`,
-        createdAt: serverTimestamp()
-      });
-
-    } catch (e) {
-      console.error("Failed to accept proposal", e);
+      await setDoc(doc(db, 'projects', projectId), { observerApiKey: newKey }, { merge: true });
+    } catch (error) {
+      console.error("Error saving observer API key:", error);
     }
   };
+
+  const messagesRef = collection(db, 'projects', projectId, 'messages');
 
   useEffect(() => {
     const q = query(messagesRef, orderBy('createdAt', 'asc'));
@@ -170,52 +153,12 @@ ${canvasContent}`,
           </label>
           <Input 
             type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Enter Gemini API Key"
+            value={localApiKey}
+            onChange={(e) => handleSaveApiKey(e.target.value)}
+            placeholder={universalApiKey ? "Using Universal API Key" : "Enter Gemini API Key"}
             className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-sm h-8"
           />
-          <p className="text-[10px] text-zinc-500 mt-2">Used for the Observer's intelligence layer.</p>
-        </div>
-      )}
-
-
-      {/* --- PROPOSALS QUEUE --- */}
-      {pendingProposals.length > 0 && (
-        <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50">
-          <h3 className="text-xs font-semibold text-amber-800 dark:text-amber-500 uppercase tracking-wider mb-3">Pending Proposals ({pendingProposals.length})</h3>
-          <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
-            {pendingProposals.map(proposal => (
-              <div key={proposal.id} className="bg-white dark:bg-zinc-900 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3 shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">From: {proposal.agentName}</span>
-                  <div className="flex gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/50"
-                      onClick={() => updateProposal(proposal.id, 'rejected')}
-                      title="Reject"
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/50"
-                      onClick={() => handleAcceptProposal(proposal.id, proposal.content)}
-                      title="Accept & Apply"
-                    >
-                      <Check className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="text-sm text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950 p-2 rounded border border-zinc-100 dark:border-zinc-800 line-clamp-3">
-                  {proposal.content.substring(0, 150)}...
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-[10px] text-zinc-500 mt-2">Overrides the Universal API Key for this project's Observer.</p>
         </div>
       )}
 

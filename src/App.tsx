@@ -8,6 +8,7 @@ import { auth, db } from './firebase';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import Desk from './components/Desk';
+import GlobalSettingsDialog from './components/GlobalSettingsDialog';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -82,6 +83,7 @@ export default function App() {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-zinc-500 dark:text-zinc-400">{user.email}</span>
+            <GlobalSettingsDialog userId={user.uid} />
             <Button variant="outline" size="sm" onClick={handleLogout} className="text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800">
               Sign out
             </Button>

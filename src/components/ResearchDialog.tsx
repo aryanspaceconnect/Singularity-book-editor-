@@ -4,16 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Search, Globe } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
 import Markdown from 'react-markdown';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { useAI } from '../lib/ai-context';
 
 export default function ResearchDialog() {
   const [query, setQuery] = useState('');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const { ai } = useAI();
 
   const handleSearch = async () => {
     if (!query) return;
@@ -23,6 +22,9 @@ export default function ResearchDialog() {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: query,
+        config: {
+          tools: [{ googleSearch: {} }]
+        }
       });
       setResult(response.text || "No results found.");
     } catch (error) {
