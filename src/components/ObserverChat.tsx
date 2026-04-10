@@ -1,13 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { GoogleGenAI, ThinkingLevel, Type, FunctionDeclaration } from '@google/genai';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Bot, User, Settings2, Key } from 'lucide-react';
 import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const updateCanvasFunctionDeclaration: FunctionDeclaration = {
   name: "updateCanvasContent",
@@ -28,7 +25,11 @@ export default function ObserverChat({ projectId, userId, canvasContent }: { pro
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKey, setApiKey] = useState(process.env.GEMINI_API_KEY || '');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const ai = useMemo(() => new GoogleGenAI({ apiKey: apiKey || 'dummy-key' }), [apiKey]);
 
   const messagesRef = collection(db, 'projects', projectId, 'messages');
 
@@ -106,23 +107,49 @@ ${canvasContent}`,
 
     } catch (error) {
       console.error("Error sending message to Gemini:", error);
+      await addDoc(messagesRef, {
+        role: 'assistant',
+        content: "Error: Could not connect to the Observer AI. Please check your API key in settings.",
+        createdAt: serverTimestamp()
+      });
     } finally {
       setIsTyping(false);
     }
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="p-4 border-b border-zinc-800 bg-zinc-950">
-        <h2 className="font-semibold text-zinc-100 flex items-center gap-2">
-          <Bot className="h-5 w-5 text-emerald-500" />
-          Observer
-        </h2>
-        <p className="text-xs text-zinc-500 mt-1">System monitor & orchestrator</p>
+    <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-zinc-900">
+      <div className="p-5 border-b border-zinc-200 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-between">
+        <div>
+          <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            <Bot className="h-5 w-5 text-emerald-500" />
+            Observer
+          </h2>
+          <p className="text-xs text-zinc-500 mt-1">System monitor & orchestrator</p>
+        </div>
+        <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full">
+          <Settings2 className="h-4 w-4" />
+        </Button>
       </div>
       
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        <div className="space-y-4">
+      {showSettings && (
+        <div className="p-4 bg-zinc-100 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/50">
+          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-2 mb-2">
+            <Key className="h-3 w-3" /> Observer API Key (Gemini)
+          </label>
+          <Input 
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="Enter Gemini API Key"
+            className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-sm h-8"
+          />
+          <p className="text-[10px] text-zinc-500 mt-2">Used for the Observer's intelligence layer.</p>
+        </div>
+      )}
+
+      <div className="flex-1 p-5 overflow-y-auto" ref={scrollRef}>
+        <div className="space-y-6">
           {messages.length === 0 && (
             <div className="text-center text-zinc-500 text-sm mt-10">
               Hello! I am the Observer. I monitor the book's progress and coordinate the AI agents. What would you like to work on today?
@@ -130,20 +157,20 @@ ${canvasContent}`,
           )}
           {messages.map((msg) => (
             <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${msg.role === 'user' ? 'bg-zinc-800' : 'bg-emerald-950 border border-emerald-900'}`}>
-                {msg.role === 'user' ? <User className="h-4 w-4 text-zinc-300" /> : <Bot className="h-4 w-4 text-emerald-500" />}
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${msg.role === 'user' ? 'bg-zinc-100 dark:bg-zinc-800' : 'bg-emerald-100 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-900'}`}>
+                {msg.role === 'user' ? <User className="h-4 w-4 text-zinc-500 dark:text-zinc-300" /> : <Bot className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />}
               </div>
-              <div className={`rounded-lg px-3 py-2 text-sm max-w-[80%] ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-100' : 'bg-zinc-900 text-zinc-300 border border-zinc-800'}`}>
+              <div className={`rounded-2xl px-4 py-2.5 text-sm max-w-[80%] ${msg.role === 'user' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-tr-sm' : 'bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800/50 rounded-tl-sm shadow-sm'}`}>
                 {msg.content}
               </div>
             </div>
           ))}
           {isTyping && (
             <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-950 border border-emerald-900">
-                <Bot className="h-4 w-4 text-emerald-500" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-900">
+                <Bot className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />
               </div>
-              <div className="rounded-lg px-3 py-2 text-sm bg-zinc-900 text-zinc-500 border border-zinc-800 flex items-center gap-1">
+              <div className="rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm bg-white dark:bg-zinc-950 text-zinc-500 border border-zinc-200 dark:border-zinc-800/50 flex items-center gap-1 shadow-sm">
                 <span className="animate-bounce">.</span>
                 <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
                 <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>.</span>
@@ -151,17 +178,17 @@ ${canvasContent}`,
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
-      <div className="p-4 border-t border-zinc-800 bg-zinc-950">
+      <div className="p-4 border-t border-zinc-200 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-900/50">
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
           <Input 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             placeholder="Ask the Observer..." 
-            className="bg-zinc-900 border-zinc-800 focus-visible:ring-emerald-500"
+            className="bg-white dark:bg-zinc-950 border-zinc-300 dark:border-zinc-800 focus-visible:ring-emerald-500 rounded-full px-4"
           />
-          <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shrink-0 shadow-sm">
             <Send className="h-4 w-4" />
           </Button>
         </form>

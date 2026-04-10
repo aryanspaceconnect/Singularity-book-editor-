@@ -2,18 +2,55 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Cpu } from 'lucide-react';
+import { Loader2, Cpu, UserPlus, Globe2, MessageSquare } from 'lucide-react';
 import Markdown from 'react-markdown';
 
 export default function NvidiaAgentDialog() {
-  const [query, setQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('general');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
+  // General state
+  const [query, setQuery] = useState('');
+
+  // Character state
+  const [charName, setCharName] = useState('');
+  const [charRole, setCharRole] = useState('');
+  const [charTraits, setCharTraits] = useState('');
+
+  // World state
+  const [worldName, setWorldName] = useState('');
+  const [worldGenre, setWorldGenre] = useState('');
+  const [worldElements, setWorldElements] = useState('');
+
   const handleGenerate = async () => {
-    if (!query) return;
+    let finalPrompt = '';
+
+    if (activeTab === 'general') {
+      if (!query) return;
+      finalPrompt = query;
+    } else if (activeTab === 'character') {
+      if (!charRole) return;
+      finalPrompt = `Generate a detailed character profile for a story. 
+Name: ${charName || 'Unknown'}
+Role/Archetype: ${charRole}
+Key Traits: ${charTraits || 'Not specified'}
+
+Please include their background, motivations, internal conflicts, and physical description.`;
+    } else if (activeTab === 'world') {
+      if (!worldGenre) return;
+      finalPrompt = `Generate a comprehensive world-building guide for a story setting.
+World Name: ${worldName || 'Unnamed World'}
+Genre: ${worldGenre}
+Key Elements/Rules: ${worldElements || 'Not specified'}
+
+Please include details on the geography, society, magic/technology system, and major factions.`;
+    }
+
     setLoading(true);
     setResult('');
     try {
@@ -22,7 +59,7 @@ export default function NvidiaAgentDialog() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ prompt: query })
+        body: JSON.stringify({ prompt: finalPrompt })
       });
 
       const data = await response.json();
@@ -44,53 +81,138 @@ export default function NvidiaAgentDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100" />}>
         <Cpu className="h-4 w-4 text-green-500" />
         Gemma Agent
       </DialogTrigger>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-2xl">
+      <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Cpu className="h-5 w-5 text-green-500" />
             Gemma-4-31b-it (NVIDIA API)
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 pt-4">
-          <div className="flex gap-2">
-            <Input 
-              value={query} 
-              onChange={(e) => setQuery(e.target.value)} 
-              placeholder="Ask the Gemma agent..."
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-green-500"
-              onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-            />
-            <Button 
-              onClick={handleGenerate} 
-              disabled={!query || loading} 
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generate"}
-            </Button>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full pt-2">
+          <TabsList className="grid w-full grid-cols-3 bg-zinc-100 dark:bg-zinc-900">
+            <TabsTrigger value="general" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100">
+              <MessageSquare className="w-4 h-4 mr-2" /> General
+            </TabsTrigger>
+            <TabsTrigger value="character" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100">
+              <UserPlus className="w-4 h-4 mr-2" /> Character
+            </TabsTrigger>
+            <TabsTrigger value="world" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100">
+              <Globe2 className="w-4 h-4 mr-2" /> World-Building
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="mt-4 flex gap-4 h-[450px]">
+            {/* Left Column: Inputs */}
+            <div className="w-1/3 flex flex-col gap-4 border-r border-zinc-200 dark:border-zinc-800 pr-4">
+              <TabsContent value="general" className="mt-0 flex-1 flex flex-col gap-4">
+                <div className="space-y-2 flex-1">
+                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Prompt</label>
+                  <Textarea 
+                    value={query} 
+                    onChange={(e) => setQuery(e.target.value)} 
+                    placeholder="Ask the Gemma agent..."
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500 min-h-[200px] resize-none"
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="character" className="mt-0 flex-1 flex flex-col gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Character Name</label>
+                  <Input 
+                    value={charName} 
+                    onChange={(e) => setCharName(e.target.value)} 
+                    placeholder="e.g. Elara Vance"
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Role / Archetype *</label>
+                  <Input 
+                    value={charRole} 
+                    onChange={(e) => setCharRole(e.target.value)} 
+                    placeholder="e.g. Rogue Scholar"
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500"
+                  />
+                </div>
+                <div className="space-y-2 flex-1 flex flex-col">
+                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Key Traits</label>
+                  <Textarea 
+                    value={charTraits} 
+                    onChange={(e) => setCharTraits(e.target.value)} 
+                    placeholder="e.g. Cynical but fiercely loyal, carries a mysterious artifact"
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500 resize-none flex-1"
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="world" className="mt-0 flex-1 flex flex-col gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">World Name</label>
+                  <Input 
+                    value={worldName} 
+                    onChange={(e) => setWorldName(e.target.value)} 
+                    placeholder="e.g. Aethelgard"
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Genre *</label>
+                  <Input 
+                    value={worldGenre} 
+                    onChange={(e) => setWorldGenre(e.target.value)} 
+                    placeholder="e.g. Cyberpunk Fantasy"
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500"
+                  />
+                </div>
+                <div className="space-y-2 flex-1 flex flex-col">
+                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Key Elements</label>
+                  <Textarea 
+                    value={worldElements} 
+                    onChange={(e) => setWorldElements(e.target.value)} 
+                    placeholder="e.g. Magic is powered by neon, corporations act as feudal lords"
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500 resize-none flex-1"
+                  />
+                </div>
+              </TabsContent>
+
+              <Button 
+                onClick={handleGenerate} 
+                disabled={loading || (activeTab === 'general' && !query) || (activeTab === 'character' && !charRole) || (activeTab === 'world' && !worldGenre)} 
+                className="bg-green-600 hover:bg-green-700 text-white w-full mt-auto shrink-0"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Cpu className="h-4 w-4 mr-2" />}
+                {loading ? "Generating..." : "Generate"}
+              </Button>
+            </div>
+
+            {/* Right Column: Output */}
+            <div className="w-2/3">
+              <ScrollArea className="h-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
+                {loading ? (
+                  <div className="flex h-full items-center justify-center text-zinc-500 gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Gemma is thinking...
+                  </div>
+                ) : result ? (
+                  <div className="prose dark:prose-invert prose-sm max-w-none">
+                    <Markdown>{result}</Markdown>
+                  </div>
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center text-zinc-500 text-sm gap-2">
+                    <p>Configure your prompt on the left and click Generate.</p>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-600">Ensure NVIDIA_API_KEY is set in your environment secrets.</p>
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
           </div>
-          
-          <ScrollArea className="h-[400px] rounded-md border border-zinc-800 bg-zinc-900/50 p-4">
-            {loading ? (
-              <div className="flex h-full items-center justify-center text-zinc-500 gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Gemma is thinking...
-              </div>
-            ) : result ? (
-              <div className="prose prose-invert prose-sm max-w-none">
-                <Markdown>{result}</Markdown>
-              </div>
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center text-zinc-500 text-sm gap-2">
-                <p>Enter a prompt to test the NVIDIA Gemma agent.</p>
-                <p className="text-xs text-zinc-600">Ensure NVIDIA_API_KEY is set in your environment secrets.</p>
-              </div>
-            )}
-          </ScrollArea>
-        </div>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

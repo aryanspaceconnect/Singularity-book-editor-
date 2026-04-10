@@ -36,11 +36,11 @@ export default function ResearchDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100" />}>
         <Globe className="h-4 w-4" />
         Research Agent
       </DialogTrigger>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-2xl">
+      <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-blue-400" />
@@ -53,7 +53,7 @@ export default function ResearchDialog() {
               value={query} 
               onChange={(e) => setQuery(e.target.value)} 
               placeholder="What do you want to research?"
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-blue-500"
+              className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-blue-500"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             <Button 
@@ -65,14 +65,14 @@ export default function ResearchDialog() {
             </Button>
           </div>
           
-          <ScrollArea className="h-[400px] rounded-md border border-zinc-800 bg-zinc-900/50 p-4">
+          <ScrollArea className="h-[400px] rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
             {loading ? (
               <div className="flex h-full items-center justify-center text-zinc-500 gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Searching the web...
               </div>
             ) : result ? (
-              <div className="prose prose-invert prose-sm max-w-none">
+              <div className="prose dark:prose-invert prose-sm max-w-none">
                 <Markdown>{result}</Markdown>
               </div>
             ) : (

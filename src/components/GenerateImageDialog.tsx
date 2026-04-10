@@ -49,30 +49,30 @@ export default function GenerateImageDialog({ onImageGenerated }: { onImageGener
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100" />}>
         <ImageIcon className="h-4 w-4" />
         Add Illustration
       </DialogTrigger>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
+      <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
         <DialogHeader>
           <DialogTitle>Generate Illustration</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-400">Prompt</label>
+            <label className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Prompt</label>
             <Input 
               value={prompt} 
               onChange={(e) => setPrompt(e.target.value)} 
               placeholder="A cyberpunk city at night..."
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-emerald-500"
+              className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-emerald-500"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-400">Aspect Ratio</label>
+            <label className="text-sm font-medium text-zinc-600 dark:text-zinc-400">Aspect Ratio</label>
             <select 
               value={aspectRatio} 
               onChange={(e) => setAspectRatio(e.target.value)}
-              className="flex h-10 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-10 w-full items-center justify-between rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <option value="1:1">1:1 (Square)</option>
               <option value="2:3">2:3 (Portrait)</option>

@@ -34,11 +34,11 @@ export default function QuickIdeasDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-zinc-900 border-zinc-800 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100" />}>
         <Zap className="h-4 w-4 text-yellow-500" />
         Quick Ideas
       </DialogTrigger>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100">
+      <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-yellow-500" />
@@ -51,7 +51,7 @@ export default function QuickIdeasDialog() {
               value={query} 
               onChange={(e) => setQuery(e.target.value)} 
               placeholder="e.g. A plot twist for a mystery novel"
-              className="bg-zinc-900 border-zinc-800 focus-visible:ring-yellow-500"
+              className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-yellow-500"
               onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
             />
             <Button 
@@ -63,14 +63,14 @@ export default function QuickIdeasDialog() {
             </Button>
           </div>
           
-          <ScrollArea className="h-[200px] rounded-md border border-zinc-800 bg-zinc-900/50 p-4">
+          <ScrollArea className="h-[200px] rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
             {loading ? (
               <div className="flex h-full items-center justify-center text-zinc-500 gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Brainstorming...
               </div>
             ) : result ? (
-              <div className="whitespace-pre-wrap text-sm text-zinc-300">
+              <div className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
                 {result}
               </div>
             ) : (
