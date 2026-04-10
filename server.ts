@@ -1,4 +1,4 @@
-import { createProposal, getProposalsByProject, updateProposalStatus } from "./backend/proposals";
+import { createProposal, getProposalsByProject, updateProposalStatus } from "./backend/proposals.ts";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
