@@ -1,3 +1,4 @@
+import { createProposal, getProposalsByProject, updateProposalStatus } from "./backend/proposals";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
@@ -48,6 +49,37 @@ async function startServer() {
       console.error("NVIDIA API Error:", error);
       res.status(500).json({ error: "Failed to fetch from NVIDIA API" });
     }
+  });
+
+
+  // --- PROPOSALS API ---
+  app.get("/api/projects/:projectId/proposals", (req, res) => {
+    const { projectId } = req.params;
+    const proposals = getProposalsByProject(projectId);
+    res.json(proposals);
+  });
+
+  app.post("/api/projects/:projectId/proposals", (req, res) => {
+    const { projectId } = req.params;
+    const { agentName, content } = req.body;
+    if (!agentName || !content) {
+      return res.status(400).json({ error: "Missing agentName or content" });
+    }
+    const proposal = createProposal(projectId, agentName, content);
+    res.json(proposal);
+  });
+
+  app.patch("/api/proposals/:proposalId", (req, res) => {
+    const { proposalId } = req.params;
+    const { status } = req.body;
+    if (status !== 'accepted' && status !== 'rejected') {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+    const proposal = updateProposalStatus(proposalId, status);
+    if (!proposal) {
+      return res.status(404).json({ error: "Proposal not found" });
+    }
+    res.json(proposal);
   });
 
   // Vite middleware for development
