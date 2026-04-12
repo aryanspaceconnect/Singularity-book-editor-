@@ -3,15 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Image as ImageIcon } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { useAI } from '../lib/ai-context';
 
 export default function GenerateImageDialog({ onImageGenerated }: { onImageGenerated: (url: string) => void }) {
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const { ai } = useAI();
 
   const handleGenerate = async () => {
     if (!prompt) return;

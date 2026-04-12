@@ -136,6 +136,40 @@
   }
 }
 
+.ProseMirror {
+  white-space: pre-wrap;
+}
+
+.ProseMirror img {
+  transition: all 0.2s ease-in-out;
+  border-radius: 0.5rem;
+}
+
+.ProseMirror img[data-align="left"] {
+  float: left;
+  margin: 0 1.5rem 1.5rem 0;
+}
+
+.ProseMirror img[data-align="right"] {
+  float: right;
+  margin: 0 0 1.5rem 1.5rem;
+}
+
+.ProseMirror img[data-align="center"] {
+  display: block;
+  margin: 1.5rem auto;
+}
+
+.ProseMirror img[data-size="small"] { width: 25%; }
+.ProseMirror img[data-size="medium"] { width: 50%; }
+.ProseMirror img[data-size="large"] { width: 75%; }
+.ProseMirror img[data-size="full"] { width: 100%; }
+
+.ProseMirror p {
+  orphans: 2;
+  widows: 2;
+}
+
 .ProseMirror p.is-editor-empty:first-child::before {
   color: #adb5bd;
   content: attr(data-placeholder);

@@ -1,4 +1,54 @@
 import { Extension, Node, mergeAttributes } from '@tiptap/core';
+import Image from '@tiptap/extension-image';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import DraggableImageComponent from '../components/DraggableImageComponent';
+
+export const CustomImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      align: {
+        default: 'center',
+        parseHTML: element => element.getAttribute('data-align') || 'center',
+        renderHTML: attributes => ({ 'data-align': attributes.align }),
+      },
+      size: {
+        default: 'full',
+        parseHTML: element => element.getAttribute('data-size') || 'full',
+        renderHTML: attributes => ({ 'data-size': attributes.size }),
+      },
+      positionType: {
+        default: 'inline',
+        parseHTML: element => element.getAttribute('data-position-type') || 'inline',
+        renderHTML: attributes => ({ 'data-position-type': attributes.positionType }),
+      },
+      x: {
+        default: 0,
+        parseHTML: element => parseInt(element.getAttribute('data-x') || '0', 10),
+        renderHTML: attributes => ({ 'data-x': attributes.x }),
+      },
+      y: {
+        default: 0,
+        parseHTML: element => parseInt(element.getAttribute('data-y') || '0', 10),
+        renderHTML: attributes => ({ 'data-y': attributes.y }),
+      },
+      width: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-width'),
+        renderHTML: attributes => ({ 'data-width': attributes.width }),
+      },
+      height: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-height'),
+        renderHTML: attributes => ({ 'data-height': attributes.height }),
+      },
+    };
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(DraggableImageComponent);
+  },
+});
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {

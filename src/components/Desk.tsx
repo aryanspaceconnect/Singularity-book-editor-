@@ -125,15 +125,33 @@ export default function Desk({ userId }: { userId: string }) {
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div>
                     <h3 className="text-xl font-medium text-zinc-900 dark:text-zinc-100">{proj.title}</h3>
-                    <p className="text-xs text-zinc-500 mt-2">Last updated: {new Date(proj.updatedAt).toLocaleDateString()}</p>
+                    {proj.description && (
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2 line-clamp-2">{proj.description}</p>
+                    )}
+                    {proj.contributors && (
+                      <p className="text-xs text-zinc-500 mt-2">By: {proj.contributors}</p>
+                    )}
+                    <p className="text-xs text-zinc-400 mt-2">Last updated: {new Date(proj.updatedAt).toLocaleDateString()}</p>
                   </div>
                   <div className="flex items-center justify-between mt-auto">
                     <div className="flex -space-x-2">
                       <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border-2 border-white dark:border-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 dark:text-zinc-400">AI</div>
                       <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border-2 border-white dark:border-zinc-900 flex items-center justify-center text-[10px] text-zinc-500 dark:text-zinc-400">AI</div>
                     </div>
-                    <div className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-400/10 px-3 py-1 rounded-full">
-                      Engine Active
+                    <div className="flex items-center gap-2">
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <ProjectSettingsDialog 
+                          projectId={proj.id} 
+                          trigger={
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full">
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          } 
+                        />
+                      </div>
+                      <div className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-400/10 px-3 py-1 rounded-full">
+                        Engine Active
+                      </div>
                     </div>
                   </div>
                 </div>
