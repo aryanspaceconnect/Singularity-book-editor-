@@ -232,7 +232,7 @@ export default function WritingAgentsMenu({ editor }: { editor: Editor }) {
     {
       id: 'super-polish',
       name: 'Super Polish (Multi-Agent)',
-      icon: <Wand2 className="h-4 w-4 mr-2 text-indigo-500" />,
+      icon: <Wand2 className="h-4 w-4 mr-2 text-primary" />,
       description: 'Grammar -> Tone -> Auto-format (Sequential)',
       prompt: [
         'Please review the following text for any grammatical errors, typos, or punctuation mistakes. Correct them while preserving the original meaning and style. Return the corrected text in HTML format.',
@@ -245,7 +245,7 @@ export default function WritingAgentsMenu({ editor }: { editor: Editor }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={
-        <Button variant="outline" size="sm" className="gap-2 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50">
+        <Button variant="outline" size="sm" className="gap-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
           <Wand2 className="h-4 w-4" />
           Writing Agents
         </Button>
@@ -263,10 +263,10 @@ export default function WritingAgentsMenu({ editor }: { editor: Editor }) {
                 className="flex flex-col items-start py-3 cursor-pointer"
               >
                 <div className="flex items-center w-full">
-                  {loadingAgent === agent.name ? <Loader2 className="h-4 w-4 mr-2 animate-spin text-indigo-500" /> : agent.icon}
+                  {loadingAgent === agent.name ? <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" /> : agent.icon}
                   <span className="font-medium">{agent.name}</span>
                 </div>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 pl-6 leading-relaxed">{agent.description}</span>
+                <span className="text-xs text-muted-foreground mt-1 pl-6 leading-relaxed">{agent.description}</span>
               </DropdownMenuItem>
             ))}
           </ScrollArea>

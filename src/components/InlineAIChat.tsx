@@ -77,13 +77,13 @@ export default function InlineAIChat({ editor }: { editor: Editor }) {
     <BubbleMenu 
       editor={editor} 
       options={{ placement: 'top' }}
-      className="flex items-center gap-1 p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg rounded-lg overflow-hidden"
+      className="flex items-center gap-1 p-1 bg-background border border-border shadow-lg rounded-lg overflow-hidden"
     >
       {!isOpen ? (
         <Button 
           variant="ghost" 
           size="sm" 
-          className="h-8 gap-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+          className="h-8 gap-2 text-primary hover:bg-primary/10"
           onClick={() => {
             setIsOpen(true);
             setTimeout(() => inputRef.current?.focus(), 50);
@@ -94,27 +94,27 @@ export default function InlineAIChat({ editor }: { editor: Editor }) {
         </Button>
       ) : result ? (
         <div className="flex items-center gap-2 px-2 py-1">
-          <span className="text-sm text-zinc-600 dark:text-zinc-400 max-w-[200px] truncate">
+          <span className="text-sm text-muted-foreground max-w-[200px] truncate">
             Ready to apply
           </span>
-          <div className="flex items-center gap-1 border-l border-zinc-200 dark:border-zinc-800 pl-2 ml-1">
-            <Button variant="ghost" size="icon-sm" onClick={applyResult} className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30">
+          <div className="flex items-center gap-1 border-l border-border pl-2 ml-1">
+            <Button variant="ghost" size="icon-sm" onClick={applyResult} className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10">
               <Check className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon-sm" onClick={discardResult} className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30">
+            <Button variant="ghost" size="icon-sm" onClick={discardResult} className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex items-center gap-1 px-1">
-          <Sparkles className="h-4 w-4 text-indigo-500 ml-1" />
+          <Sparkles className="h-4 w-4 text-primary ml-1" />
           <Input
             ref={inputRef}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Tell AI what to do..."
-            className="h-8 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-[250px] shadow-none bg-transparent"
+            className="h-8 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 w-[250px] shadow-none bg-transparent text-foreground placeholder:text-muted-foreground"
             disabled={loading}
           />
           <Button 
@@ -122,7 +122,7 @@ export default function InlineAIChat({ editor }: { editor: Editor }) {
             size="icon-sm" 
             variant="ghost" 
             disabled={!prompt.trim() || loading}
-            className="h-6 w-6 shrink-0 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+            className="h-6 w-6 shrink-0 text-primary hover:text-primary hover:bg-primary/10"
           >
             {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
           </Button>

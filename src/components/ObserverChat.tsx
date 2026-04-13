@@ -132,23 +132,23 @@ ${canvasContent}`,
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-white dark:bg-zinc-900">
-      <div className="p-5 border-b border-zinc-200 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-between">
+    <div className="flex h-full flex-col overflow-hidden bg-background">
+      <div className="p-5 border-b border-border bg-muted/50 flex items-center justify-between">
         <div>
-          <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <Bot className="h-5 w-5 text-emerald-500" />
+          <h2 className="font-semibold text-foreground flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
             Observer
           </h2>
-          <p className="text-xs text-zinc-500 mt-1">System monitor & orchestrator</p>
+          <p className="text-xs text-muted-foreground mt-1">System monitor & orchestrator</p>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full">
+        <Button variant="ghost" size="icon" onClick={() => setShowSettings(!showSettings)} className="text-muted-foreground hover:text-foreground rounded-full">
           <Settings2 className="h-4 w-4" />
         </Button>
       </div>
       
       {showSettings && (
-        <div className="p-4 bg-zinc-100 dark:bg-zinc-950 border-b border-zinc-200 dark:border-zinc-800/50">
-          <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-2 mb-2">
+        <div className="p-4 bg-muted border-b border-border">
+          <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
             <Key className="h-3 w-3" /> Observer API Key (Gemini)
           </label>
           <Input 
@@ -156,35 +156,35 @@ ${canvasContent}`,
             value={localApiKey}
             onChange={(e) => handleSaveApiKey(e.target.value)}
             placeholder={universalApiKey ? "Using Universal API Key" : "Enter Gemini API Key"}
-            className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-sm h-8"
+            className="bg-background border-border text-sm h-8"
           />
-          <p className="text-[10px] text-zinc-500 mt-2">Overrides the Universal API Key for this project's Observer.</p>
+          <p className="text-[10px] text-muted-foreground mt-2">Overrides the Universal API Key for this project's Observer.</p>
         </div>
       )}
 
       <div className="flex-1 p-5 overflow-y-auto" ref={scrollRef}>
         <div className="space-y-6">
           {messages.length === 0 && (
-            <div className="text-center text-zinc-500 text-sm mt-10">
+            <div className="text-center text-muted-foreground text-sm mt-10">
               Hello! I am the Observer. I monitor the book's progress and coordinate the AI agents. What would you like to work on today?
             </div>
           )}
           {messages.map((msg) => (
             <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${msg.role === 'user' ? 'bg-zinc-100 dark:bg-zinc-800' : 'bg-emerald-100 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-900'}`}>
-                {msg.role === 'user' ? <User className="h-4 w-4 text-zinc-500 dark:text-zinc-300" /> : <Bot className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />}
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${msg.role === 'user' ? 'bg-muted' : 'bg-primary/20 border border-primary/30'}`}>
+                {msg.role === 'user' ? <User className="h-4 w-4 text-muted-foreground" /> : <Bot className="h-4 w-4 text-primary" />}
               </div>
-              <div className={`rounded-2xl px-4 py-2.5 text-sm max-w-[80%] ${msg.role === 'user' ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-tr-sm' : 'bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800/50 rounded-tl-sm shadow-sm'}`}>
+              <div className={`rounded-2xl px-4 py-2.5 text-sm max-w-[80%] ${msg.role === 'user' ? 'bg-muted text-foreground rounded-tr-sm' : 'bg-card text-card-foreground border border-border rounded-tl-sm shadow-sm'}`}>
                 {msg.content}
               </div>
             </div>
           ))}
           {isTyping && (
             <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-900">
-                <Bot className="h-4 w-4 text-emerald-600 dark:text-emerald-500" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 border border-primary/30">
+                <Bot className="h-4 w-4 text-primary" />
               </div>
-              <div className="rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm bg-white dark:bg-zinc-950 text-zinc-500 border border-zinc-200 dark:border-zinc-800/50 flex items-center gap-1 shadow-sm">
+              <div className="rounded-2xl rounded-tl-sm px-4 py-2.5 text-sm bg-card text-muted-foreground border border-border flex items-center gap-1 shadow-sm">
                 <span className="animate-bounce">.</span>
                 <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
                 <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>.</span>
@@ -194,15 +194,15 @@ ${canvasContent}`,
         </div>
       </div>
 
-      <div className="p-4 border-t border-zinc-200 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-900/50">
+      <div className="p-4 border-t border-border bg-muted/50">
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
           <Input 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             placeholder="Ask the Observer..." 
-            className="bg-white dark:bg-zinc-950 border-zinc-300 dark:border-zinc-800 focus-visible:ring-emerald-500 rounded-full px-4"
+            className="bg-background border-border focus-visible:ring-primary rounded-full px-4"
           />
-          <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shrink-0 shadow-sm">
+          <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shrink-0 shadow-sm">
             <Send className="h-4 w-4" />
           </Button>
         </form>

@@ -54,25 +54,25 @@ export default function InsertMediaDialog({ editor }: { editor: any }) {
       <DialogTrigger render={<Button variant="ghost" size="icon-sm" title="Insert Image" />}>
         <ImageIcon className="h-4 w-4" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] w-[95vw]">
+      <DialogContent className="sm:max-w-[500px] w-[95vw] bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle>Insert Image</DialogTitle>
         </DialogHeader>
         <Tabs defaultValue="upload" className="w-full mt-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="upload"><Upload className="w-4 h-4 mr-2 hidden sm:block"/> Upload</TabsTrigger>
-            <TabsTrigger value="gallery"><Library className="w-4 h-4 mr-2 hidden sm:block"/> Gallery</TabsTrigger>
-            <TabsTrigger value="url"><LinkIcon className="w-4 h-4 mr-2 hidden sm:block"/> URL</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 bg-muted">
+            <TabsTrigger value="upload" className="data-[state=active]:bg-background data-[state=active]:text-foreground"><Upload className="w-4 h-4 mr-2 hidden sm:block"/> Upload</TabsTrigger>
+            <TabsTrigger value="gallery" className="data-[state=active]:bg-background data-[state=active]:text-foreground"><Library className="w-4 h-4 mr-2 hidden sm:block"/> Gallery</TabsTrigger>
+            <TabsTrigger value="url" className="data-[state=active]:bg-background data-[state=active]:text-foreground"><LinkIcon className="w-4 h-4 mr-2 hidden sm:block"/> URL</TabsTrigger>
           </TabsList>
           
           <TabsContent value="upload" className="mt-4 space-y-4">
             <div 
-              className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg p-8 text-center hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors cursor-pointer relative overflow-hidden" 
+              className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-muted transition-colors cursor-pointer relative overflow-hidden" 
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-8 w-8 text-zinc-400 mb-2" />
-              <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Click to upload image</p>
-              <p className="text-xs text-zinc-500 mt-1">Supports PNG, JPG, SVG, WEBP</p>
+              <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+              <p className="text-sm font-medium text-foreground">Click to upload image</p>
+              <p className="text-xs text-muted-foreground mt-1">Supports PNG, JPG, SVG, WEBP</p>
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -85,7 +85,7 @@ export default function InsertMediaDialog({ editor }: { editor: any }) {
 
           <TabsContent value="gallery" className="mt-4">
             {gallery.length === 0 ? (
-              <div className="text-center py-8 text-zinc-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <Library className="w-8 h-8 mx-auto mb-2 opacity-50" />
                 <p>No images uploaded yet.</p>
               </div>
@@ -94,7 +94,7 @@ export default function InsertMediaDialog({ editor }: { editor: any }) {
                 {gallery.map((src, i) => (
                   <div 
                     key={i} 
-                    className="aspect-square rounded-md border border-zinc-200 dark:border-zinc-800 overflow-hidden cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all"
+                    className="aspect-square rounded-md border border-border overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all"
                     onClick={() => {
                       editor.chain().focus().setImage({ src, align: 'center', size: 'full' }).run();
                       setOpen(false);
@@ -109,15 +109,16 @@ export default function InsertMediaDialog({ editor }: { editor: any }) {
 
           <TabsContent value="url" className="mt-4 space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Image URL</label>
+              <label className="text-sm font-medium text-foreground">Image URL</label>
               <Input 
                 placeholder="https://example.com/image.png" 
                 value={url} 
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                className="bg-background border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
-            <Button onClick={handleUrlSubmit} className="w-full" disabled={!url}>Insert Image</Button>
+            <Button onClick={handleUrlSubmit} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={!url}>Insert Image</Button>
           </TabsContent>
         </Tabs>
       </DialogContent>

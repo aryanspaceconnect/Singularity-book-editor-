@@ -81,102 +81,102 @@ Please include details on the geography, society, magic/technology system, and m
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100" />}>
-        <Cpu className="h-4 w-4 text-green-500" />
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground" />}>
+        <Cpu className="h-4 w-4 text-primary" />
         Gemma Agent
       </DialogTrigger>
-      <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-w-4xl">
+      <DialogContent className="bg-background border-border text-foreground max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Cpu className="h-5 w-5 text-green-500" />
+            <Cpu className="h-5 w-5 text-primary" />
             Gemma-4-31b-it (NVIDIA API)
           </DialogTitle>
         </DialogHeader>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full pt-2">
-          <TabsList className="grid w-full grid-cols-3 bg-zinc-100 dark:bg-zinc-900">
-            <TabsTrigger value="general" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100">
+          <TabsList className="grid w-full grid-cols-3 bg-muted">
+            <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:text-foreground">
               <MessageSquare className="w-4 h-4 mr-2" /> General
             </TabsTrigger>
-            <TabsTrigger value="character" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100">
+            <TabsTrigger value="character" className="data-[state=active]:bg-background data-[state=active]:text-foreground">
               <UserPlus className="w-4 h-4 mr-2" /> Character
             </TabsTrigger>
-            <TabsTrigger value="world" className="data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-900 dark:data-[state=active]:text-zinc-100">
+            <TabsTrigger value="world" className="data-[state=active]:bg-background data-[state=active]:text-foreground">
               <Globe2 className="w-4 h-4 mr-2" /> World-Building
             </TabsTrigger>
           </TabsList>
 
           <div className="mt-4 flex gap-4 h-[450px]">
             {/* Left Column: Inputs */}
-            <div className="w-1/3 flex flex-col gap-4 border-r border-zinc-200 dark:border-zinc-800 pr-4">
+            <div className="w-1/3 flex flex-col gap-4 border-r border-border pr-4">
               <TabsContent value="general" className="mt-0 flex-1 flex flex-col gap-4">
                 <div className="space-y-2 flex-1">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Prompt</label>
+                  <label className="text-xs font-medium text-muted-foreground">Prompt</label>
                   <Textarea 
                     value={query} 
                     onChange={(e) => setQuery(e.target.value)} 
                     placeholder="Ask the Gemma agent..."
-                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500 min-h-[200px] resize-none"
+                    className="bg-muted/50 border-border focus-visible:ring-primary min-h-[200px] resize-none"
                   />
                 </div>
               </TabsContent>
 
               <TabsContent value="character" className="mt-0 flex-1 flex flex-col gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Character Name</label>
+                  <label className="text-xs font-medium text-muted-foreground">Character Name</label>
                   <Input 
                     value={charName} 
                     onChange={(e) => setCharName(e.target.value)} 
                     placeholder="e.g. Elara Vance"
-                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500"
+                    className="bg-muted/50 border-border focus-visible:ring-primary"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Role / Archetype *</label>
+                  <label className="text-xs font-medium text-muted-foreground">Role / Archetype *</label>
                   <Input 
                     value={charRole} 
                     onChange={(e) => setCharRole(e.target.value)} 
                     placeholder="e.g. Rogue Scholar"
-                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500"
+                    className="bg-muted/50 border-border focus-visible:ring-primary"
                   />
                 </div>
                 <div className="space-y-2 flex-1 flex flex-col">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Key Traits</label>
+                  <label className="text-xs font-medium text-muted-foreground">Key Traits</label>
                   <Textarea 
                     value={charTraits} 
                     onChange={(e) => setCharTraits(e.target.value)} 
                     placeholder="e.g. Cynical but fiercely loyal, carries a mysterious artifact"
-                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500 resize-none flex-1"
+                    className="bg-muted/50 border-border focus-visible:ring-primary resize-none flex-1"
                   />
                 </div>
               </TabsContent>
 
               <TabsContent value="world" className="mt-0 flex-1 flex flex-col gap-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">World Name</label>
+                  <label className="text-xs font-medium text-muted-foreground">World Name</label>
                   <Input 
                     value={worldName} 
                     onChange={(e) => setWorldName(e.target.value)} 
                     placeholder="e.g. Aethelgard"
-                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500"
+                    className="bg-muted/50 border-border focus-visible:ring-primary"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Genre *</label>
+                  <label className="text-xs font-medium text-muted-foreground">Genre *</label>
                   <Input 
                     value={worldGenre} 
                     onChange={(e) => setWorldGenre(e.target.value)} 
                     placeholder="e.g. Cyberpunk Fantasy"
-                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500"
+                    className="bg-muted/50 border-border focus-visible:ring-primary"
                   />
                 </div>
                 <div className="space-y-2 flex-1 flex flex-col">
-                  <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">Key Elements</label>
+                  <label className="text-xs font-medium text-muted-foreground">Key Elements</label>
                   <Textarea 
                     value={worldElements} 
                     onChange={(e) => setWorldElements(e.target.value)} 
                     placeholder="e.g. Magic is powered by neon, corporations act as feudal lords"
-                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-green-500 resize-none flex-1"
+                    className="bg-muted/50 border-border focus-visible:ring-primary resize-none flex-1"
                   />
                 </div>
               </TabsContent>
@@ -184,7 +184,7 @@ Please include details on the geography, society, magic/technology system, and m
               <Button 
                 onClick={handleGenerate} 
                 disabled={loading || (activeTab === 'general' && !query) || (activeTab === 'character' && !charRole) || (activeTab === 'world' && !worldGenre)} 
-                className="bg-green-600 hover:bg-green-700 text-white w-full mt-auto shrink-0"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground w-full mt-auto shrink-0"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Cpu className="h-4 w-4 mr-2" />}
                 {loading ? "Generating..." : "Generate"}
@@ -193,9 +193,9 @@ Please include details on the geography, society, magic/technology system, and m
 
             {/* Right Column: Output */}
             <div className="w-2/3">
-              <ScrollArea className="h-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
+              <ScrollArea className="h-full rounded-md border border-border bg-muted/50 p-4">
                 {loading ? (
-                  <div className="flex h-full items-center justify-center text-zinc-500 gap-2">
+                  <div className="flex h-full items-center justify-center text-muted-foreground gap-2">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     Gemma is thinking...
                   </div>
@@ -204,9 +204,9 @@ Please include details on the geography, society, magic/technology system, and m
                     <Markdown>{result}</Markdown>
                   </div>
                 ) : (
-                  <div className="flex h-full flex-col items-center justify-center text-zinc-500 text-sm gap-2">
+                  <div className="flex h-full flex-col items-center justify-center text-muted-foreground text-sm gap-2">
                     <p>Configure your prompt on the left and click Generate.</p>
-                    <p className="text-xs text-zinc-400 dark:text-zinc-600">Ensure NVIDIA_API_KEY is set in your environment secrets.</p>
+                    <p className="text-xs text-muted-foreground/70">Ensure NVIDIA_API_KEY is set in your environment secrets.</p>
                   </div>
                 )}
               </ScrollArea>

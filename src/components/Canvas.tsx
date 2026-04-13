@@ -11,21 +11,20 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import CharacterCount from '@tiptap/extension-character-count';
-import { BookTypography, DropCap, PageBreak, CustomImage } from '../lib/tiptap-extensions';
+import { BookTypography, DropCap, PageBreak, CustomImage, SmartPunctuation } from '../lib/tiptap-extensions';
 import { SlashCommands, slashCommandSuggestion } from '../lib/slash-commands';
 import { useEffect, useState, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors, Check, AlertCircle } from 'lucide-react';
+import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors, Check, AlertCircle, Download } from 'lucide-react';
+import ProjectSettingsDialog, { STANDARD_PAGE_SIZES } from './ProjectSettingsDialog';
 import GenerateImageDialog from './GenerateImageDialog';
 import ResearchDialog from './ResearchDialog';
 import QuickIdeasDialog from './QuickIdeasDialog';
 import NvidiaAgentDialog from './NvidiaAgentDialog';
 import WritingAgentsMenu from './WritingAgentsMenu';
 import InlineAIChat from './InlineAIChat';
-import ContentGraphDialog from './ContentGraphDialog';
 import PublishingDirector from './PublishingDirector';
-import PretextLayoutDialog from './PretextLayoutDialog';
 import InsertMediaDialog from './InsertMediaDialog';
 import ImageFormatMenu from './ImageFormatMenu';
 import { Button } from '@/components/ui/button';
@@ -34,13 +33,13 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
   if (!editor) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-1 p-2 border-b border-zinc-200 dark:border-zinc-800/50 bg-zinc-50 dark:bg-zinc-900/50 rounded-t-[2rem]">
+    <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/50 rounded-t-[2rem]">
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().toggleBold().run()}
         disabled={!editor.can().chain().focus().toggleBold().run()}
-        className={editor.isActive('bold') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive('bold') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <Bold className="h-4 w-4" />
       </Button>
@@ -49,7 +48,7 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
         size="icon-sm"
         onClick={() => editor.chain().focus().toggleItalic().run()}
         disabled={!editor.can().chain().focus().toggleItalic().run()}
-        className={editor.isActive('italic') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive('italic') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <Italic className="h-4 w-4" />
       </Button>
@@ -58,18 +57,18 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
         size="icon-sm"
         onClick={() => editor.chain().focus().toggleStrike().run()}
         disabled={!editor.can().chain().focus().toggleStrike().run()}
-        className={editor.isActive('strike') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive('strike') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <Strikethrough className="h-4 w-4" />
       </Button>
       
-      <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-800 mx-1" />
+      <div className="w-px h-4 bg-border mx-1" />
       
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        className={editor.isActive('heading', { level: 1 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive('heading', { level: 1 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <Heading1 className="h-4 w-4" />
       </Button>
@@ -77,18 +76,50 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={editor.isActive('heading', { level: 2 }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive('heading', { level: 2 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <Heading2 className="h-4 w-4" />
       </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        className={editor.isActive('heading', { level: 3 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+      >
+        <Heading3 className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
+        className={editor.isActive('heading', { level: 4 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+      >
+        <Heading4 className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
+        className={editor.isActive('heading', { level: 5 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+      >
+        <Heading5 className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
+        className={editor.isActive('heading', { level: 6 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+      >
+        <Heading6 className="h-4 w-4" />
+      </Button>
       
-      <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-800 mx-1" />
+      <div className="w-px h-4 bg-border mx-1" />
 
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        className={editor.isActive({ textAlign: 'left' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive({ textAlign: 'left' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <AlignLeft className="h-4 w-4" />
       </Button>
@@ -96,7 +127,7 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        className={editor.isActive({ textAlign: 'center' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive({ textAlign: 'center' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <AlignCenter className="h-4 w-4" />
       </Button>
@@ -104,7 +135,7 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        className={editor.isActive({ textAlign: 'right' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive({ textAlign: 'right' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <AlignRight className="h-4 w-4" />
       </Button>
@@ -112,18 +143,18 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-        className={editor.isActive({ textAlign: 'justify' }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive({ textAlign: 'justify' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <AlignJustify className="h-4 w-4" />
       </Button>
 
-      <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-800 mx-1" />
+      <div className="w-px h-4 bg-border mx-1" />
 
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={editor.isActive('bulletList') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive('bulletList') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <List className="h-4 w-4" />
       </Button>
@@ -131,7 +162,7 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={editor.isActive('orderedList') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive('orderedList') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <ListOrdered className="h-4 w-4" />
       </Button>
@@ -139,18 +170,18 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={editor.isActive('blockquote') ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive('blockquote') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
       >
         <Quote className="h-4 w-4" />
       </Button>
 
-      <div className="w-px h-4 bg-zinc-300 dark:bg-zinc-800 mx-1" />
+      <div className="w-px h-4 bg-border mx-1" />
 
       <Button
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().toggleDropCap().run()}
-        className={editor.isActive('paragraph', { dropCap: true }) ? 'bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
+        className={editor.isActive('paragraph', { dropCap: true }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
         title="Toggle Drop Cap"
       >
         <Type className="h-4 w-4" />
@@ -159,7 +190,7 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
         variant="ghost"
         size="icon-sm"
         onClick={() => editor.chain().focus().setPageBreak().run()}
-        className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+        className="text-muted-foreground hover:text-foreground"
         title="Insert Page Break"
       >
         <Scissors className="h-4 w-4" />
@@ -169,14 +200,7 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
       
       <div className="flex-1" />
       <div className="flex items-center gap-2 pr-2">
-        <div className="text-xs text-zinc-500 dark:text-zinc-400 mr-2 flex items-center gap-1">
-          {saveStatus === 'saving' && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
-          {saveStatus === 'saved' && <><Check className="h-3 w-3" /> Saved</>}
-          {saveStatus === 'error' && <><AlertCircle className="h-3 w-3 text-red-500" /> Error saving</>}
-        </div>
-        <PretextLayoutDialog editor={editor} />
         <PublishingDirector editor={editor} />
-        <ContentGraphDialog editor={editor} />
         <WritingAgentsMenu editor={editor} />
         <NvidiaAgentDialog />
         <QuickIdeasDialog />
@@ -194,6 +218,19 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [settings, setSettings] = useState<any>(null);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const settingsRef = doc(db, 'projects', projectId);
+    const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setSettings(docSnap.data());
+      }
+    });
+    return () => unsubscribe();
+  }, [projectId]);
 
   const editor = useEditor({
     extensions: [
@@ -218,6 +255,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
       Highlight.configure({ multicolor: true }),
       CharacterCount,
       BookTypography,
+      SmartPunctuation,
       DropCap,
       PageBreak,
       SlashCommands.configure({
@@ -250,7 +288,6 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   });
 
   const [runningHeader, setRunningHeader] = useState('');
-  const [pageSize, setPageSize] = useState<'infinite' | 'a4' | 'a3'>('infinite');
 
   useEffect(() => {
     if (!editor) return;
@@ -260,9 +297,6 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         const data = docSnap.data();
         if (data.runningHeader !== undefined) {
           setRunningHeader(data.runningHeader);
-        }
-        if (data.pageSize !== undefined) {
-          setPageSize(data.pageSize);
         }
         if (data.content) {
           if (data.content.trim().startsWith('<')) {
@@ -315,59 +349,87 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
     }, 1000);
   };
 
-  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newValue = e.target.value as 'infinite' | 'a4' | 'a3';
-    setPageSize(newValue);
-    setSaveStatus('saving');
-    setDoc(docRef, { pageSize: newValue }, { merge: true })
-      .then(() => setSaveStatus('saved'))
-      .catch((e) => {
-        console.error("Error saving page size:", e);
-        setSaveStatus('error');
-      });
-  };
-
-  if (loading) {
+  if (loading || !settings) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  const getPageSizeClasses = () => {
-    switch (pageSize) {
-      case 'a4': return 'relative max-w-[210mm] min-h-[297mm] bg-white dark:bg-zinc-950 shadow-xl border border-zinc-200 dark:border-zinc-800 p-12 mx-auto';
-      case 'a3': return 'relative max-w-[297mm] min-h-[420mm] bg-white dark:bg-zinc-950 shadow-xl border border-zinc-200 dark:border-zinc-800 p-16 mx-auto';
-      default: return 'relative max-w-3xl mx-auto';
+  const getPageDimensions = () => {
+    if (settings.pageSizeId === 'custom') {
+      const unit = settings.customUnit || 'mm';
+      return {
+        width: `${settings.customWidth}${unit}`,
+        height: `${settings.customHeight}${unit}`,
+      };
     }
+    const size = STANDARD_PAGE_SIZES.find(s => s.id === settings.pageSizeId) || STANDARD_PAGE_SIZES[0];
+    return {
+      width: `${size.width}mm`,
+      height: `${size.height}mm`,
+    };
   };
 
+  const { width, height } = getPageDimensions();
+
   return (
-    <div className="h-full w-full flex flex-col bg-white dark:bg-black rounded-[2rem]">
+    <div className="h-full w-full flex flex-col bg-background rounded-[2rem] relative overflow-hidden">
       <MenuBar editor={editor} saveStatus={saveStatus} />
       <InlineAIChat editor={editor} />
       <ImageFormatMenu editor={editor} />
-      <div className="flex-1 overflow-y-auto p-8 lg:p-12 relative bg-zinc-50 dark:bg-black">
-        <div className="max-w-3xl mx-auto mb-8 flex items-center justify-between">
-          <input 
-            type="text" 
-            value={runningHeader}
-            onChange={handleRunningHeaderChange}
-            placeholder="Running Header (e.g., Chapter 1)" 
-            className="flex-1 text-center text-xs uppercase tracking-widest text-zinc-400 dark:text-zinc-500 bg-transparent border-none focus:ring-0 focus:outline-none placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
-          />
-          <select 
-            value={pageSize}
-            onChange={handlePageSizeChange}
-            className="text-xs bg-transparent border border-zinc-200 dark:border-zinc-800 rounded px-2 py-1 text-zinc-500 dark:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            <option value="infinite">Infinite Canvas</option>
-            <option value="a4">A4 Page</option>
-            <option value="a3">A3 Page</option>
-          </select>
+      
+      {/* Floating Save Indicator */}
+      <div className="absolute top-4 right-4 z-50 pointer-events-none flex items-center gap-2">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm text-xs font-medium text-muted-foreground transition-opacity duration-300">
+          {saveStatus === 'saving' && <><Loader2 className="h-3 w-3 animate-spin text-primary" /> <span>Saving...</span></>}
+          {saveStatus === 'saved' && <><Check className="h-3 w-3 text-primary" /> <span>Saved</span></>}
+          {saveStatus === 'error' && <><AlertCircle className="h-3 w-3 text-destructive" /> <span>Error</span></>}
         </div>
-        <div className={`transition-all duration-300 ${getPageSizeClasses()}`}>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => window.print()} 
+          className="pointer-events-auto rounded-full bg-background/80 backdrop-blur-sm border-border text-muted-foreground hover:bg-muted hover:text-foreground gap-2"
+        >
+          <Download className="h-3 w-3" />
+          Export PDF
+        </Button>
+        <ProjectSettingsDialog projectId={projectId} />
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-8 lg:p-12 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible">
+        <div className="max-w-fit mx-auto mb-8 flex items-center justify-center print:hidden">
+          <div className="text-center text-xs uppercase tracking-widest text-muted-foreground bg-transparent border-none focus:ring-0 focus:outline-none placeholder:text-muted-foreground/50">
+            {runningHeader || 'Untitled Manuscript'}
+          </div>
+        </div>
+        
+        <div 
+          className={`transition-all duration-300 mx-auto relative shadow-2xl print:shadow-none print:border-none print:m-0 page-container texture-${settings.texture || 'none'}`}
+          style={{ 
+            width, 
+            minHeight: height,
+            backgroundColor: settings.pageColor || '#ffffff',
+            padding: `${settings.margins || 20}mm`,
+          }}
+        >
+          {settings.showGrid && (
+            <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
+              backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+              color: 'var(--foreground)'
+            }} />
+          )}
+          {settings.showMargins && (
+            <div className="absolute pointer-events-none border border-primary/20 border-dashed" style={{
+              top: `${settings.margins || 20}mm`,
+              bottom: `${settings.margins || 20}mm`,
+              left: `${settings.margins || 20}mm`,
+              right: `${settings.margins || 20}mm`,
+            }} />
+          )}
           <EditorContent editor={editor} />
         </div>
       </div>

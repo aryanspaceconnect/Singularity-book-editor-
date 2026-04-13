@@ -40,35 +40,35 @@ export default function GlobalSettingsDialog({ userId }: { userId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100" />}>
+      <DialogTrigger render={<Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" />}>
         <Settings className="h-5 w-5" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
+      <DialogContent className="sm:max-w-[425px] bg-background border-border">
         <DialogHeader>
-          <DialogTitle className="text-zinc-900 dark:text-zinc-100">Universal Settings</DialogTitle>
-          <DialogDescription className="text-zinc-500 dark:text-zinc-400">
+          <DialogTitle className="text-foreground">Universal Settings</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
             Configure global settings for the intelligent layer.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="apiKey" className="text-zinc-900 dark:text-zinc-100">Universal API Key (Gemini)</Label>
+            <Label htmlFor="apiKey" className="text-foreground">Universal API Key (Gemini)</Label>
             <Input
               id="apiKey"
               type="password"
               placeholder="Leave blank to use system default"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100"
+              className="bg-muted/50 border-border text-foreground"
             />
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs text-muted-foreground">
               This key will be used by default for all AI interactions if provided.
             </p>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} className="border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800">Cancel</Button>
-          <Button onClick={handleSave} disabled={loading} className="bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200">
+          <Button variant="outline" onClick={() => setOpen(false)} className="border-border text-foreground hover:bg-muted">Cancel</Button>
+          <Button onClick={handleSave} disabled={loading} className="bg-primary text-primary-foreground hover:bg-primary/90">
             {loading ? "Saving..." : "Save changes"}
           </Button>
         </DialogFooter>

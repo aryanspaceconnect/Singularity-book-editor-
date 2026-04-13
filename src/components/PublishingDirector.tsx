@@ -174,50 +174,50 @@ Do not include markdown blocks, just the raw JSON.`,
 
   const renderSeverity = (severity: string) => {
     switch (severity) {
-      case 'high': return <span className="text-red-500 font-bold uppercase text-xs">High Risk</span>;
-      case 'medium': return <span className="text-amber-500 font-bold uppercase text-xs">Medium Risk</span>;
-      case 'low': return <span className="text-blue-500 font-bold uppercase text-xs">Low Risk</span>;
+      case 'high': return <span className="text-destructive font-bold uppercase text-xs">High Risk</span>;
+      case 'medium': return <span className="text-primary font-bold uppercase text-xs">Medium Risk</span>;
+      case 'low': return <span className="text-muted-foreground font-bold uppercase text-xs">Low Risk</span>;
       default: return null;
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800 dark:hover:bg-indigo-900/50" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20" />}>
         <Wand2 className="h-4 w-4" />
         Director Mode
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-[800px] max-h-[85vh] flex flex-col bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle>Publishing Director</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-muted-foreground">
             Guide the AI to autonomously draft, validate, and check your manuscript.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="intent" className="flex-1 flex flex-col mt-4 min-h-0">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="intent"><FileText className="w-4 h-4 mr-2"/> Auto-Draft</TabsTrigger>
-            <TabsTrigger value="validation"><BookOpenCheck className="w-4 h-4 mr-2"/> Validation</TabsTrigger>
-            <TabsTrigger value="legality"><ShieldCheck className="w-4 h-4 mr-2"/> Legality</TabsTrigger>
-            <TabsTrigger value="formatting"><Wand2 className="w-4 h-4 mr-2"/> Typeset</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-muted">
+            <TabsTrigger value="intent" className="data-[state=active]:bg-background data-[state=active]:text-foreground"><FileText className="w-4 h-4 mr-2"/> Auto-Draft</TabsTrigger>
+            <TabsTrigger value="validation" className="data-[state=active]:bg-background data-[state=active]:text-foreground"><BookOpenCheck className="w-4 h-4 mr-2"/> Validation</TabsTrigger>
+            <TabsTrigger value="legality" className="data-[state=active]:bg-background data-[state=active]:text-foreground"><ShieldCheck className="w-4 h-4 mr-2"/> Legality</TabsTrigger>
+            <TabsTrigger value="formatting" className="data-[state=active]:bg-background data-[state=active]:text-foreground"><Wand2 className="w-4 h-4 mr-2"/> Typeset</TabsTrigger>
           </TabsList>
           
           <ScrollArea className="flex-1 mt-4 pr-4">
             <TabsContent value="intent" className="space-y-4 mt-0">
               <div className="space-y-2">
-                <label className="text-sm font-medium">What should happen next?</label>
+                <label className="text-sm font-medium text-foreground">What should happen next?</label>
                 <Textarea 
                   placeholder="e.g., Write a thrilling chase scene through the neon-lit streets of Neo-Tokyo. The protagonist should barely escape."
                   value={intentPrompt}
                   onChange={(e) => setIntentPrompt(e.target.value)}
-                  className="min-h-[150px] resize-none"
+                  className="min-h-[150px] resize-none bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
                 />
               </div>
               <Button 
                 onClick={handleAutoDraft} 
                 disabled={!intentPrompt || loading}
-                className="w-full gap-2"
+                className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                 Execute Intent
@@ -226,8 +226,8 @@ Do not include markdown blocks, just the raw JSON.`,
 
             <TabsContent value="validation" className="space-y-4 mt-0">
               <div className="flex justify-between items-center">
-                <p className="text-sm text-zinc-500">Scan for plot holes, character inconsistencies, and pacing issues.</p>
-                <Button onClick={handleValidationCheck} disabled={loading} size="sm" variant="secondary">
+                <p className="text-sm text-muted-foreground">Scan for plot holes, character inconsistencies, and pacing issues.</p>
+                <Button onClick={handleValidationCheck} disabled={loading} size="sm" variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <BookOpenCheck className="h-4 w-4 mr-2" />}
                   Run Validation
                 </Button>
@@ -236,20 +236,20 @@ Do not include markdown blocks, just the raw JSON.`,
               {validationReport && (
                 <div className="space-y-4 mt-4">
                   {validationReport.issues.length === 0 ? (
-                    <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 text-primary bg-primary/10 p-4 rounded-lg">
                       <CheckCircle2 className="h-5 w-5" />
                       <p className="font-medium">No major issues found! Your story is solid.</p>
                     </div>
                   ) : (
                     validationReport.issues.map((issue: any, i: number) => (
-                      <div key={i} className="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 space-y-2">
+                      <div key={i} className="p-4 rounded-lg border border-border bg-muted/50 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold capitalize text-zinc-900 dark:text-zinc-100">{issue.type.replace('_', ' ')}</span>
+                          <span className="font-semibold capitalize text-foreground">{issue.type.replace('_', ' ')}</span>
                           {renderSeverity(issue.severity)}
                         </div>
-                        <p className="text-sm text-zinc-700 dark:text-zinc-300">{issue.description}</p>
-                        <div className="text-sm bg-white dark:bg-zinc-950 p-3 rounded border border-zinc-100 dark:border-zinc-800">
-                          <span className="font-semibold text-indigo-600 dark:text-indigo-400 block mb-1">AI Suggestion:</span>
+                        <p className="text-sm text-muted-foreground">{issue.description}</p>
+                        <div className="text-sm bg-background p-3 rounded border border-border">
+                          <span className="font-semibold text-primary block mb-1">AI Suggestion:</span>
                           {issue.suggestion}
                         </div>
                       </div>
@@ -261,8 +261,8 @@ Do not include markdown blocks, just the raw JSON.`,
 
             <TabsContent value="legality" className="space-y-4 mt-0">
               <div className="flex justify-between items-center">
-                <p className="text-sm text-zinc-500">Scan for copyright infringement, libel, and sensitive content.</p>
-                <Button onClick={handleLegalityCheck} disabled={loading} size="sm" variant="secondary">
+                <p className="text-sm text-muted-foreground">Scan for copyright infringement, libel, and sensitive content.</p>
+                <Button onClick={handleLegalityCheck} disabled={loading} size="sm" variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
                   Run Legal Scan
                 </Button>
@@ -271,28 +271,28 @@ Do not include markdown blocks, just the raw JSON.`,
               {legalityReport && (
                 <div className="space-y-4 mt-4">
                   {legalityReport.issues.length === 0 ? (
-                    <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 text-primary bg-primary/10 p-4 rounded-lg">
                       <CheckCircle2 className="h-5 w-5" />
                       <p className="font-medium">No legal or compliance risks detected.</p>
                     </div>
                   ) : (
                     legalityReport.issues.map((issue: any, i: number) => (
-                      <div key={i} className="p-4 rounded-lg border border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10 space-y-2">
+                      <div key={i} className="p-4 rounded-lg border border-destructive/20 bg-destructive/10 space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-red-500" />
-                            <span className="font-semibold capitalize text-zinc-900 dark:text-zinc-100">{issue.type}</span>
+                            <AlertTriangle className="h-4 w-4 text-destructive" />
+                            <span className="font-semibold capitalize text-foreground">{issue.type}</span>
                           </div>
                           {renderSeverity(issue.severity)}
                         </div>
                         {issue.textSnippet && (
-                          <blockquote className="text-xs italic border-l-2 border-red-200 dark:border-red-800 pl-2 text-zinc-600 dark:text-zinc-400">
+                          <blockquote className="text-xs italic border-l-2 border-destructive/30 pl-2 text-muted-foreground">
                             "{issue.textSnippet}"
                           </blockquote>
                         )}
-                        <p className="text-sm text-zinc-700 dark:text-zinc-300">{issue.explanation}</p>
-                        <div className="text-sm bg-white dark:bg-zinc-950 p-3 rounded border border-red-100 dark:border-red-900/30">
-                          <span className="font-semibold text-red-600 dark:text-red-400 block mb-1">Recommendation:</span>
+                        <p className="text-sm text-muted-foreground">{issue.explanation}</p>
+                        <div className="text-sm bg-background p-3 rounded border border-destructive/20">
+                          <span className="font-semibold text-destructive block mb-1">Recommendation:</span>
                           {issue.suggestion}
                         </div>
                       </div>
@@ -304,16 +304,16 @@ Do not include markdown blocks, just the raw JSON.`,
 
             <TabsContent value="formatting" className="space-y-4 mt-0">
               <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
-                <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-full">
-                  <Wand2 className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                <div className="bg-primary/10 p-4 rounded-full">
+                  <Wand2 className="h-8 w-8 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Professional Typesetting</h3>
-                  <p className="text-sm text-zinc-500 max-w-sm mx-auto mt-2">
+                  <h3 className="text-lg font-semibold text-foreground">Professional Typesetting</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto mt-2">
                     Let the AI review your entire manuscript to ensure consistent paragraph spacing, appropriate chapter headings, and professional formatting.
                   </p>
                 </div>
-                <Button onClick={handleTypeset} disabled={loading} className="gap-2 mt-4">
+                <Button onClick={handleTypeset} disabled={loading} className="gap-2 mt-4 bg-primary hover:bg-primary/90 text-primary-foreground">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                   Format & Typeset Document
                 </Button>

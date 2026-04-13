@@ -37,14 +37,14 @@ export default function ResearchDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100" />}>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground" />}>
         <Globe className="h-4 w-4" />
         Research Agent
       </DialogTrigger>
-      <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-w-2xl">
+      <DialogContent className="bg-background border-border text-foreground max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-blue-400" />
+            <Globe className="h-5 w-5 text-primary" />
             Research Agent (Live Web Search)
           </DialogTitle>
         </DialogHeader>
@@ -54,21 +54,21 @@ export default function ResearchDialog() {
               value={query} 
               onChange={(e) => setQuery(e.target.value)} 
               placeholder="What do you want to research?"
-              className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-blue-500"
+              className="bg-muted/50 border-border focus-visible:ring-primary"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             <Button 
               onClick={handleSearch} 
               disabled={!query || loading} 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </Button>
           </div>
           
-          <ScrollArea className="h-[400px] rounded-md border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
+          <ScrollArea className="h-[400px] rounded-md border border-border bg-muted/50 p-4">
             {loading ? (
-              <div className="flex h-full items-center justify-center text-zinc-500 gap-2">
+              <div className="flex h-full items-center justify-center text-muted-foreground gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Searching the web...
               </div>
@@ -77,7 +77,7 @@ export default function ResearchDialog() {
                 <Markdown>{result}</Markdown>
               </div>
             ) : (
-              <div className="flex h-full items-center justify-center text-zinc-500">
+              <div className="flex h-full items-center justify-center text-muted-foreground">
                 Ask a question to search the web.
               </div>
             )}

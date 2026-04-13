@@ -108,12 +108,12 @@ export const SlashCommandList = forwardRef((props: any, ref) => {
   }));
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden flex flex-col w-64 z-50">
+    <div className="bg-background border border-border rounded-xl shadow-xl overflow-hidden flex flex-col w-64 z-50">
       {props.items.length ? (
         props.items.map((item: any, index: number) => (
           <button
             className={`flex items-center gap-2 px-4 py-2 text-sm text-left w-full ${
-              index === selectedIndex ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100' : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+              index === selectedIndex ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/50'
             }`}
             key={index}
             onClick={() => selectItem(index)}
@@ -123,7 +123,7 @@ export const SlashCommandList = forwardRef((props: any, ref) => {
           </button>
         ))
       ) : (
-        <div className="px-4 py-2 text-sm text-zinc-500">No result</div>
+        <div className="px-4 py-2 text-sm text-muted-foreground">No result</div>
       )}
     </div>
   );

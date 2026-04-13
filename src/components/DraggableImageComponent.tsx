@@ -62,7 +62,7 @@ export default function DraggableImageComponent(props: any) {
   return (
     <NodeViewWrapper 
       ref={wrapperRef}
-      className={`draggable-image-wrapper ${selected ? 'ring-2 ring-indigo-500' : ''}`}
+      className={`draggable-image-wrapper ${selected ? 'ring-2 ring-primary' : ''}`}
       style={{
         position: positionType === 'absolute' ? 'absolute' : 'relative',
         left: positionType === 'absolute' ? `${localPos.x}px` : 'auto',

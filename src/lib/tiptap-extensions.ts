@@ -1,7 +1,36 @@
-import { Extension, Node, mergeAttributes } from '@tiptap/core';
+import { Extension, Node, mergeAttributes, InputRule } from '@tiptap/core';
 import Image from '@tiptap/extension-image';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import DraggableImageComponent from '../components/DraggableImageComponent';
+
+export const SmartPunctuation = Extension.create({
+  name: 'smartPunctuation',
+
+  addInputRules() {
+    return [
+      // Double space to period + space
+      new InputRule({
+        find: /([a-zA-Z0-9])  $/,
+        handler: ({ state, range, match, commands }) => {
+          const { tr } = state;
+          const start = range.from;
+          const end = range.to;
+          tr.insertText(`${match[1]}. `, start, end);
+        },
+      }),
+      // Capitalize first letter of sentence
+      new InputRule({
+        find: /(?:^|[.!?]\s+)([a-z])$/,
+        handler: ({ state, range, match, commands }) => {
+          const { tr } = state;
+          const start = range.from;
+          const end = range.to;
+          tr.insertText(match[0].toUpperCase(), start, end);
+        },
+      }),
+    ]
+  },
+});
 
 export const CustomImage = Image.extend({
   addAttributes() {
@@ -194,7 +223,7 @@ export const PageBreak = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['hr', mergeAttributes(HTMLAttributes, { class: 'page-break my-12 border-t-2 border-dashed border-zinc-300 dark:border-zinc-700 relative before:content-["PAGE_BREAK"] before:absolute before:left-1/2 before:-translate-x-1/2 before:-top-3 before:bg-white dark:before:bg-black before:px-2 before:text-xs before:text-zinc-400 before:font-mono' })];
+    return ['hr', mergeAttributes(HTMLAttributes, { class: 'page-break my-12 border-t-2 border-dashed border-border relative before:content-["PAGE_BREAK"] before:absolute before:left-1/2 before:-translate-x-1/2 before:-top-3 before:bg-background before:px-2 before:text-xs before:text-muted-foreground before:font-mono' })];
   },
 
   addCommands() {
