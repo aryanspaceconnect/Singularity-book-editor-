@@ -86,9 +86,9 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
       {trigger ? (
         <DialogTrigger render={trigger} />
       ) : (
-        <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground" />}>
-          <Settings className="h-4 w-4" /> Settings
-        </DialogTrigger>
+        <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground">
+            <Settings className="h-4 w-4" /> Settings
+          </Button>} />
       )}
       <DialogContent className="sm:max-w-[700px] bg-background border-border rounded-[2rem] p-8">
         <DialogHeader>
@@ -130,7 +130,7 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
             </div>
             <div className="grid gap-2">
               <Label htmlFor="observerApiKey" className="flex items-center gap-2">
-                <Key className="h-4 w-4" /> Observer API Key
+                <Key className="h-4 w-4" /> Sidekick API Key
               </Label>
               <Input
                 id="observerApiKey"
@@ -258,19 +258,38 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
               </div>
               <div className="space-y-2">
                 <Label>Page Color</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    type="color" 
-                    value={settings.pageColor} 
-                    onChange={(e) => updateSetting('pageColor', e.target.value)}
-                    className="w-12 h-10 p-1 bg-muted/50 border-border rounded-xl cursor-pointer"
-                  />
-                  <Input 
-                    type="text" 
-                    value={settings.pageColor} 
-                    onChange={(e) => updateSetting('pageColor', e.target.value)}
-                    className="flex-1 bg-muted/50 border-border rounded-xl font-mono text-sm"
-                  />
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: 'White', hex: '#ffffff' },
+                      { name: 'Cream', hex: '#fdfbf7' },
+                      { name: 'Ivory', hex: '#fffff0' },
+                      { name: 'Parchment', hex: '#f1e9d2' },
+                      { name: 'Light Gray', hex: '#f3f4f6' },
+                      { name: 'Warm Gray', hex: '#f5f5f4' },
+                    ].map((color) => (
+                      <button
+                        key={color.hex}
+                        onClick={() => updateSetting('pageColor', color.hex)}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${settings.pageColor === color.hex ? 'border-primary scale-110 shadow-sm' : 'border-border hover:scale-105'}`}
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-8 h-8 rounded-full border border-border shrink-0" 
+                      style={{ backgroundColor: settings.pageColor }}
+                    />
+                    <Input 
+                      type="text" 
+                      value={settings.pageColor} 
+                      onChange={(e) => updateSetting('pageColor', e.target.value)}
+                      className="flex-1 bg-muted/50 border-border rounded-xl font-mono text-sm uppercase"
+                      placeholder="#FFFFFF"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

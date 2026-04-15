@@ -51,9 +51,9 @@ export default function InsertMediaDialog({ editor }: { editor: any }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon-sm" title="Insert Image" />}>
-        <ImageIcon className="h-4 w-4" />
-      </DialogTrigger>
+      <DialogTrigger render={<Button variant="ghost" size="icon-sm" title="Insert Image">
+          <ImageIcon className="h-4 w-4" />
+        </Button>} />
       <DialogContent className="sm:max-w-[500px] w-[95vw] bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle>Insert Image</DialogTitle>

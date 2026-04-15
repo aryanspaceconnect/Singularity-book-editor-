@@ -81,10 +81,10 @@ Please include details on the geography, society, magic/technology system, and m
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground" />}>
-        <Cpu className="h-4 w-4 text-primary" />
-        Gemma Agent
-      </DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground">
+          <Cpu className="h-4 w-4 text-primary" />
+          Gemma Agent
+        </Button>} />
       <DialogContent className="bg-background border-border text-foreground max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

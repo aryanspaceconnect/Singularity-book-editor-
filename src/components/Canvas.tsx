@@ -11,12 +11,23 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import CharacterCount from '@tiptap/extension-character-count';
-import { BookTypography, DropCap, PageBreak, CustomImage, SmartPunctuation } from '../lib/tiptap-extensions';
+import Underline from '@tiptap/extension-underline';
+import Subscript from '@tiptap/extension-subscript';
+import Superscript from '@tiptap/extension-superscript';
+import Link from '@tiptap/extension-link';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { BookTypography, DropCap, PageBreak, CustomImage, SmartPunctuation, FontSize } from '../lib/tiptap-extensions';
 import { SlashCommands, slashCommandSuggestion } from '../lib/slash-commands';
 import { useEffect, useState, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors, Check, AlertCircle, Download } from 'lucide-react';
+import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors, Check, AlertCircle, Download, Underline as UnderlineIcon, Subscript as SubscriptIcon, Superscript as SuperscriptIcon, Link as LinkIcon, CheckSquare, Table as TableIcon } from 'lucide-react';
+import { CircleNotch, CheckCircle, WarningCircle } from '@phosphor-icons/react';
 import ProjectSettingsDialog, { STANDARD_PAGE_SIZES } from './ProjectSettingsDialog';
 import GenerateImageDialog from './GenerateImageDialog';
 import ResearchDialog from './ResearchDialog';
@@ -28,6 +39,9 @@ import PublishingDirector from './PublishingDirector';
 import InsertMediaDialog from './InsertMediaDialog';
 import ImageFormatMenu from './ImageFormatMenu';
 import { Button } from '@/components/ui/button';
+
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ChevronDown } from 'lucide-react';
 
 const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 'saving' | 'error' }) => {
   if (!editor) return null;
@@ -61,57 +75,53 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
       >
         <Strikethrough className="h-4 w-4" />
       </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        disabled={!editor.can().chain().focus().toggleUnderline().run()}
+        className={editor.isActive('underline') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+      >
+        <UnderlineIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().toggleSubscript().run()}
+        disabled={!editor.can().chain().focus().toggleSubscript().run()}
+        className={editor.isActive('subscript') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+      >
+        <SubscriptIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().toggleSuperscript().run()}
+        disabled={!editor.can().chain().focus().toggleSuperscript().run()}
+        className={editor.isActive('superscript') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+      >
+        <SuperscriptIcon className="h-4 w-4" />
+      </Button>
       
       <div className="w-px h-4 bg-border mx-1" />
       
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        className={editor.isActive('heading', { level: 1 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Heading1 className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={editor.isActive('heading', { level: 2 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Heading2 className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        className={editor.isActive('heading', { level: 3 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Heading3 className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
-        className={editor.isActive('heading', { level: 4 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Heading4 className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
-        className={editor.isActive('heading', { level: 5 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Heading5 className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
-        className={editor.isActive('heading', { level: 6 }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Heading6 className="h-4 w-4" />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+            <Heading1 className="h-4 w-4 mr-1" />
+            <ChevronDown className="h-3 w-3" />
+          </Button>} />
+        <DropdownMenuContent align="start">
+          {[1, 2, 3, 4, 5, 6].map((level: any) => (
+            <DropdownMenuItem 
+              key={level}
+              onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
+              className={editor.isActive('heading', { level }) ? 'bg-muted' : ''}
+            >
+              Heading {level}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       
       <div className="w-px h-4 bg-border mx-1" />
 
@@ -174,6 +184,22 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
       >
         <Quote className="h-4 w-4" />
       </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().toggleTaskList().run()}
+        className={editor.isActive('taskList') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+      >
+        <CheckSquare className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+        className="text-muted-foreground hover:text-foreground"
+      >
+        <TableIcon className="h-4 w-4" />
+      </Button>
 
       <div className="w-px h-4 bg-border mx-1" />
 
@@ -202,9 +228,19 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
       <div className="flex items-center gap-2 pr-2">
         <PublishingDirector editor={editor} />
         <WritingAgentsMenu editor={editor} />
-        <NvidiaAgentDialog />
-        <QuickIdeasDialog />
-        <ResearchDialog />
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10">
+              Quick Agents
+              <ChevronDown className="ml-2 h-3 w-3" />
+            </Button>} />
+          <DropdownMenuContent align="end" className="w-48">
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select Agent</div>
+            <div className="flex flex-col gap-1 p-1">
+              <QuickIdeasDialog contextText={editor.getText()} />
+              <ResearchDialog contextText={editor.getText()} />
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <GenerateImageDialog onImageGenerated={(url) => {
           editor?.chain().focus().setImage({ src: url, align: 'center', size: 'full' }).run();
         }} />
@@ -243,7 +279,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         types: ['heading', 'paragraph'],
       }),
       Placeholder.configure({
-        placeholder: 'Start writing your book here, or ask the Observer to generate an outline...',
+        placeholder: 'Start writing your book here, or ask the Sidekick to generate an outline...',
       }),
       Focus.configure({
         className: 'has-focus',
@@ -251,8 +287,19 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
       }),
       FontFamily,
       TextStyle,
+      FontSize,
       Color,
       Highlight.configure({ multicolor: true }),
+      Underline,
+      Subscript,
+      Superscript,
+      Link.configure({ openOnClick: false }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
       CharacterCount,
       BookTypography,
       SmartPunctuation,
@@ -262,10 +309,10 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         suggestion: slashCommandSuggestion,
       })
     ],
-    content: `<h1>Chapter 1: The Beginning</h1><p>Start writing your book here, or ask the Observer to generate an outline...</p>`,
+    content: `<h1>Chapter 1: The Beginning</h1><p>Start writing your book here, or ask the Sidekick to generate an outline...</p>`,
     editorProps: {
       attributes: {
-        class: 'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg mx-auto focus:outline-none max-w-3xl min-h-[500px] pb-32 font-serif',
+        class: 'prose prose-sm sm:prose-base lg:prose-lg mx-auto focus:outline-none max-w-3xl min-h-[500px] pb-32 font-serif text-gray-900',
       },
     },
     onUpdate: ({ editor }) => {
@@ -375,31 +422,33 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   const { width, height } = getPageDimensions();
 
   return (
-    <div className="h-full w-full flex flex-col bg-background rounded-[2rem] relative overflow-hidden">
-      <MenuBar editor={editor} saveStatus={saveStatus} />
-      <InlineAIChat editor={editor} />
-      <ImageFormatMenu editor={editor} />
-      
-      {/* Floating Save Indicator */}
-      <div className="absolute top-4 right-4 z-50 pointer-events-none flex items-center gap-2">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm text-xs font-medium text-muted-foreground transition-opacity duration-300">
-          {saveStatus === 'saving' && <><Loader2 className="h-3 w-3 animate-spin text-primary" /> <span>Saving...</span></>}
-          {saveStatus === 'saved' && <><Check className="h-3 w-3 text-primary" /> <span>Saved</span></>}
-          {saveStatus === 'error' && <><AlertCircle className="h-3 w-3 text-destructive" /> <span>Error</span></>}
+    <div className="h-full w-full flex flex-col bg-background rounded-[2rem] print:rounded-none relative overflow-hidden print:overflow-visible print:h-auto">
+      <style>
+        {`
+          @media print {
+            @page {
+              size: ${width} ${height};
+              margin: 0;
+            }
+          }
+        `}
+      </style>
+      <div className="print:hidden">
+        <MenuBar editor={editor} saveStatus={saveStatus} />
+        <InlineAIChat editor={editor} />
+        <ImageFormatMenu editor={editor} />
+        
+        {/* Floating Save Indicator */}
+        <div className="absolute top-4 right-4 z-50 pointer-events-none flex items-center gap-2">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm text-muted-foreground transition-opacity duration-300">
+            {saveStatus === 'saving' && <CircleNotch className="h-4 w-4 animate-spin text-primary" />}
+            {saveStatus === 'saved' && <CheckCircle className="h-4 w-4 text-primary" />}
+            {saveStatus === 'error' && <WarningCircle className="h-4 w-4 text-destructive" />}
+          </div>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => window.print()} 
-          className="pointer-events-auto rounded-full bg-background/80 backdrop-blur-sm border-border text-muted-foreground hover:bg-muted hover:text-foreground gap-2"
-        >
-          <Download className="h-3 w-3" />
-          Export PDF
-        </Button>
-        <ProjectSettingsDialog projectId={projectId} />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 lg:p-12 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible">
+      <div className="flex-1 overflow-y-auto p-8 lg:p-12 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible print:h-auto">
         <div className="max-w-fit mx-auto mb-8 flex items-center justify-center print:hidden">
           <div className="text-center text-xs uppercase tracking-widest text-muted-foreground bg-transparent border-none focus:ring-0 focus:outline-none placeholder:text-muted-foreground/50">
             {runningHeader || 'Untitled Manuscript'}

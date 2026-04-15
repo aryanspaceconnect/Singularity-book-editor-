@@ -67,9 +67,9 @@ export default function ImageConversionDialog({ editor }: { editor: any }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" title="Convert Image Format" />}>
-        <RefreshCw className="h-4 w-4" />
-      </DialogTrigger>
+      <DialogTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" title="Convert Image Format">
+          <RefreshCw className="h-4 w-4" />
+        </Button>} />
       <DialogContent className="sm:max-w-[400px] w-[95vw] bg-background border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">Convert Image Format</DialogTitle>

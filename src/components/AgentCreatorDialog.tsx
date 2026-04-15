@@ -89,10 +89,10 @@ export default function AgentCreatorDialog({ userId, projectId }: { userId: stri
     <>
       {/* ROSTER DIALOG (Spherical Window) */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger render={<Button variant="outline" className="gap-2 rounded-full bg-background border-border text-foreground hover:bg-muted shadow-sm" />}>
-          <Network className="h-4 w-4 text-primary" />
-          Agent Hub
-        </DialogTrigger>
+        <DialogTrigger render={<Button variant="outline" className="gap-2 rounded-full bg-background border-border text-foreground hover:bg-muted shadow-sm">
+            <Network className="h-4 w-4 text-primary" />
+            Agent Hub
+          </Button>} />
         <DialogContent className="bg-background/90 backdrop-blur-2xl border-border text-foreground max-w-4xl rounded-[3rem] p-8 shadow-2xl">
           <DialogHeader className="mb-6">
             <DialogTitle className="flex items-center gap-3 text-3xl font-semibold tracking-tight">

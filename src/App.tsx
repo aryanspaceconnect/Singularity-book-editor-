@@ -76,21 +76,8 @@ export default function App() {
   return (
     <TooltipProvider>
       <div className="flex h-screen w-screen flex-col bg-background text-foreground overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b border-border px-4 shrink-0 bg-background/80 backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-primary" />
-            <span className="font-semibold tracking-tight">Singularity</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">{user.email}</span>
-            <GlobalSettingsDialog userId={user.uid} />
-            <Button variant="outline" size="sm" onClick={handleLogout} className="text-foreground border-border hover:bg-muted">
-              Sign out
-            </Button>
-          </div>
-        </header>
         <main className="flex-1 overflow-hidden">
-          <Desk userId={user.uid} />
+          <Desk userId={user.uid} user={user} handleLogout={handleLogout} />
         </main>
       </div>
     </TooltipProvider>

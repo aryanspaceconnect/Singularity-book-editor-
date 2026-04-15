@@ -5,6 +5,7 @@ import { useAI } from '../lib/ai-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sparkles, ArrowRight, Loader2, Check, X } from 'lucide-react';
+import { diffWords } from 'diff';
 
 export default function InlineAIChat({ editor }: { editor: Editor }) {
   const { ai } = useAI();
@@ -12,12 +13,13 @@ export default function InlineAIChat({ editor }: { editor: Editor }) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [originalText, setOriginalText] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Reset state when selection changes
   useEffect(() => {
     const handleSelectionUpdate = () => {
-      if (isOpen) {
+      if (isOpen && !result) {
         setIsOpen(false);
         setPrompt('');
         setResult(null);
@@ -28,7 +30,7 @@ export default function InlineAIChat({ editor }: { editor: Editor }) {
     return () => {
       editor.off('selectionUpdate', handleSelectionUpdate);
     };
-  }, [editor, isOpen]);
+  }, [editor, isOpen, result]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +40,7 @@ export default function InlineAIChat({ editor }: { editor: Editor }) {
     try {
       const { from, to } = editor.state.selection;
       const selectedText = editor.state.doc.textBetween(from, to, '\n');
+      setOriginalText(selectedText);
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
@@ -71,13 +74,38 @@ export default function InlineAIChat({ editor }: { editor: Editor }) {
     inputRef.current?.focus();
   };
 
+  const renderDiff = () => {
+    if (!result) return null;
+    // Strip HTML tags for diffing to make it simpler, or just diff the text content
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = result;
+    const newText = tempDiv.textContent || '';
+    
+    const diff = diffWords(originalText, newText);
+
+    return (
+      <div className="max-h-[200px] max-w-[400px] overflow-y-auto p-2 text-sm leading-relaxed">
+        {diff.map((part, index) => {
+          const color = part.added ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30 font-medium' :
+                        part.removed ? 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30 line-through opacity-70' :
+                        'text-foreground';
+          return (
+            <span key={index} className={color}>
+              {part.value}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (!editor) return null;
 
   return (
     <BubbleMenu 
       editor={editor} 
       options={{ placement: 'top' }}
-      className="flex items-center gap-1 p-1 bg-background border border-border shadow-lg rounded-lg overflow-hidden"
+      className="flex flex-col gap-1 p-1 bg-background border border-border shadow-lg rounded-lg overflow-hidden"
     >
       {!isOpen ? (
         <Button 
@@ -93,17 +121,18 @@ export default function InlineAIChat({ editor }: { editor: Editor }) {
           Ask AI
         </Button>
       ) : result ? (
-        <div className="flex items-center gap-2 px-2 py-1">
-          <span className="text-sm text-muted-foreground max-w-[200px] truncate">
-            Ready to apply
-          </span>
-          <div className="flex items-center gap-1 border-l border-border pl-2 ml-1">
-            <Button variant="ghost" size="icon-sm" onClick={applyResult} className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10">
-              <Check className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon-sm" onClick={discardResult} className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10">
-              <X className="h-4 w-4" />
-            </Button>
+        <div className="flex flex-col">
+          {renderDiff()}
+          <div className="flex items-center justify-between border-t border-border p-2 bg-muted/30">
+            <span className="text-xs font-medium text-muted-foreground">Accept changes?</span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={discardResult} className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10">
+                <X className="h-3 w-3 mr-1" /> Discard
+              </Button>
+              <Button variant="default" size="sm" onClick={applyResult} className="h-7 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                <Check className="h-3 w-3 mr-1" /> Accept
+              </Button>
+            </div>
           </div>
         </div>
       ) : (

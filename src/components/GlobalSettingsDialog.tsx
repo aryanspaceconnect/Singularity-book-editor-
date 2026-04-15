@@ -7,7 +7,7 @@ import { Settings } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export default function GlobalSettingsDialog({ userId }: { userId: string }) {
+export default function GlobalSettingsDialog({ userId, trigger }: { userId: string, trigger?: React.ReactElement }) {
   const [open, setOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,9 +40,13 @@ export default function GlobalSettingsDialog({ userId }: { userId: string }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" />}>
-        <Settings className="h-5 w-5" />
-      </DialogTrigger>
+      {trigger ? (
+        <DialogTrigger render={trigger} />
+      ) : (
+        <DialogTrigger render={<Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+            <Settings className="h-5 w-5" />
+          </Button>} />
+      )}
       <DialogContent className="sm:max-w-[425px] bg-background border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground">Universal Settings</DialogTitle>

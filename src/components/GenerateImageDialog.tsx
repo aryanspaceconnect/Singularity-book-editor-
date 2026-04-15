@@ -2,21 +2,31 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Image as ImageIcon, Key } from 'lucide-react';
 import { useAI } from '../lib/ai-context';
+import { GoogleGenAI } from '@google/genai';
 
 export default function GenerateImageDialog({ onImageGenerated }: { onImageGenerated: (url: string) => void }) {
   const [prompt, setPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const { ai } = useAI();
+  const { ai, universalApiKey, observerApiKey } = useAI();
 
   const handleGenerate = async () => {
     if (!prompt) return;
+    
+    const activeKey = apiKey || observerApiKey || universalApiKey || process.env.GEMINI_API_KEY;
+    if (!activeKey) {
+      alert("Please provide a Gemini API key to generate images.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await ai.models.generateContent({
+      const customAi = new GoogleGenAI({ apiKey: activeKey });
+      const response = await customAi.models.generateContent({
         model: 'gemini-3.1-flash-image-preview',
         contents: {
           parts: [{ text: prompt }]
@@ -41,6 +51,7 @@ export default function GenerateImageDialog({ onImageGenerated }: { onImageGener
       }
     } catch (error) {
       console.error("Error generating image:", error);
+      alert("Failed to generate image. Please check your API key and try again.");
     } finally {
       setLoading(false);
     }
@@ -48,15 +59,27 @@ export default function GenerateImageDialog({ onImageGenerated }: { onImageGener
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground" />}>
-        <ImageIcon className="h-4 w-4" />
-        Add Illustration
-      </DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground">
+          <ImageIcon className="h-4 w-4" />
+          Add Illustration
+        </Button>} />
       <DialogContent className="bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle>Generate Illustration</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Key className="h-4 w-4" /> API Key {(!observerApiKey && !universalApiKey && !process.env.GEMINI_API_KEY) ? "(Required)" : "(Optional if set in settings)"}
+            </label>
+            <Input 
+              type="password"
+              value={apiKey} 
+              onChange={(e) => setApiKey(e.target.value)} 
+              placeholder="Gemini API Key..."
+              className="bg-muted/50 border-border focus-visible:ring-primary"
+            />
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">Prompt</label>
             <Input 

@@ -22,7 +22,26 @@ const updateCanvasFunctionDeclaration: FunctionDeclaration = {
   }
 };
 
-export default function ObserverChat({ projectId, userId, canvasContent }: { projectId: string, userId: string, canvasContent: string }) {
+const updateBookMetadataFunctionDeclaration: FunctionDeclaration = {
+  name: "updateBookMetadata",
+  description: "Update the title and description of the book based on the user's request or the current context of the story.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      title: {
+        type: Type.STRING,
+        description: "The new title for the book."
+      },
+      description: {
+        type: Type.STRING,
+        description: "The new description or synopsis for the book."
+      }
+    },
+    required: ["title", "description"]
+  }
+};
+
+export default function SidekickChat({ projectId, userId, canvasContent }: { projectId: string, userId: string, canvasContent: string }) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -84,11 +103,12 @@ export default function ObserverChat({ projectId, userId, canvasContent }: { pro
         model: 'gemini-3.1-pro-preview',
         config: {
           thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
-          tools: [{ functionDeclarations: [updateCanvasFunctionDeclaration] }],
-          systemInstruction: `You are the Observer Model in the Singularity Book Studio. 
+          tools: [{ functionDeclarations: [updateCanvasFunctionDeclaration, updateBookMetadataFunctionDeclaration] }],
+          systemInstruction: `You are the Sidekick Model in the Singularity Book Studio. 
 You are the user's main point of contact. You observe the entire system (the book canvas, the worker agents, the cache writer).
 Your job is to chat with the user, understand their intent for the book, and explain what the system is doing.
 If the user asks to make a change to the book, you MUST use the 'updateCanvasContent' tool to make the changes. You act as the Cache Writer when you use this tool.
+If the user asks to change the book's title or description (or if it makes sense based on the story's evolution), use the 'updateBookMetadata' tool.
 
 Here is the current state of the book's canvas (in JSON format):
 ${canvasContent}`,
@@ -109,6 +129,15 @@ ${canvasContent}`,
                 updatedAt: new Date().toISOString()
               }, { merge: true });
             }
+          } else if (call.name === 'updateBookMetadata') {
+            const args = call.args as any;
+            if (args.title || args.description) {
+              const projectRef = doc(db, 'projects', projectId);
+              const updateData: any = { updatedAt: new Date().toISOString() };
+              if (args.title) updateData.title = args.title;
+              if (args.description) updateData.description = args.description;
+              await setDoc(projectRef, updateData, { merge: true });
+            }
           }
         }
       }
@@ -123,7 +152,7 @@ ${canvasContent}`,
       console.error("Error sending message to Gemini:", error);
       await addDoc(messagesRef, {
         role: 'assistant',
-        content: "Error: Could not connect to the Observer AI. Please check your API key in settings.",
+        content: "Error: Could not connect to the Sidekick AI. Please check your API key in settings.",
         createdAt: serverTimestamp()
       });
     } finally {
@@ -137,7 +166,7 @@ ${canvasContent}`,
         <div>
           <h2 className="font-semibold text-foreground flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
-            Observer
+            Sidekick
           </h2>
           <p className="text-xs text-muted-foreground mt-1">System monitor & orchestrator</p>
         </div>
@@ -149,7 +178,7 @@ ${canvasContent}`,
       {showSettings && (
         <div className="p-4 bg-muted border-b border-border">
           <label className="text-xs font-medium text-foreground flex items-center gap-2 mb-2">
-            <Key className="h-3 w-3" /> Observer API Key (Gemini)
+            <Key className="h-3 w-3" /> Sidekick API Key (Gemini)
           </label>
           <Input 
             type="password"
@@ -158,7 +187,7 @@ ${canvasContent}`,
             placeholder={universalApiKey ? "Using Universal API Key" : "Enter Gemini API Key"}
             className="bg-background border-border text-sm h-8"
           />
-          <p className="text-[10px] text-muted-foreground mt-2">Overrides the Universal API Key for this project's Observer.</p>
+          <p className="text-[10px] text-muted-foreground mt-2">Overrides the Universal API Key for this project's Sidekick.</p>
         </div>
       )}
 
@@ -166,7 +195,7 @@ ${canvasContent}`,
         <div className="space-y-6">
           {messages.length === 0 && (
             <div className="text-center text-muted-foreground text-sm mt-10">
-              Hello! I am the Observer. I monitor the book's progress and coordinate the AI agents. What would you like to work on today?
+              Hello! I am your Sidekick. I monitor the book's progress and coordinate the AI agents. What would you like to work on today?
             </div>
           )}
           {messages.map((msg) => (
@@ -199,7 +228,7 @@ ${canvasContent}`,
           <Input 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
-            placeholder="Ask the Observer..." 
+            placeholder="Ask your Sidekick..." 
             className="bg-background border-border focus-visible:ring-primary rounded-full px-4"
           />
           <Button type="submit" size="icon" disabled={!input.trim() || isTyping} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full shrink-0 shadow-sm">

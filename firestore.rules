@@ -21,12 +21,14 @@ service cloud.firestore {
 
     match /agents/{agentId} {
       allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
-      allow read, update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow read: if isAuthenticated() && (resource == null || resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
     }
 
     match /projects/{projectId} {
       allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
-      allow read, update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow read: if isAuthenticated() && (resource == null || resource.data.ownerId == request.auth.uid);
+      allow update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
       
       match /messages/{messageId} {
         allow read, write: if isProjectOwner(projectId);
@@ -41,6 +43,10 @@ service cloud.firestore {
       }
       
       match /canvas/{docId} {
+        allow read, write: if isProjectOwner(projectId);
+      }
+      
+      match /versions/{versionId} {
         allow read, write: if isProjectOwner(projectId);
       }
     }
