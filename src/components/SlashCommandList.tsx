@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Heading1, Heading2, Heading3, List, ListOrdered, Quote, Type, Scissors } from 'lucide-react';
+import { Heading1, Heading2, Heading3, List, ListOrdered, Quote, Type, Scissors, Minus, MessageSquareWarning } from 'lucide-react';
 
 export const getSuggestionItems = ({ query }: { query: string }) => {
   return [
@@ -59,7 +59,28 @@ export const getSuggestionItems = ({ query }: { query: string }) => {
         editor.chain().focus().deleteRange(range).setPageBreak().run();
       },
     },
-  ].filter(item => item.title.toLowerCase().startsWith(query.toLowerCase())).slice(0, 10);
+    {
+      title: 'Scene Break (***)',
+      icon: <Minus className="w-4 h-4" />,
+      command: ({ editor, range }: any) => {
+        editor.chain().focus().deleteRange(range).setSceneBreak().run();
+      },
+    },
+    {
+      title: 'Info Callout',
+      icon: <MessageSquareWarning className="w-4 h-4 text-blue-500" />,
+      command: ({ editor, range }: any) => {
+        editor.chain().focus().deleteRange(range).setCallout({ type: 'info' }).run();
+      },
+    },
+    {
+      title: 'Warning Callout',
+      icon: <MessageSquareWarning className="w-4 h-4 text-amber-500" />,
+      command: ({ editor, range }: any) => {
+        editor.chain().focus().deleteRange(range).setCallout({ type: 'warning' }).run();
+      },
+    },
+  ].filter(item => item.title.toLowerCase().includes(query.toLowerCase())).slice(0, 10);
 };
 
 export const SlashCommandList = forwardRef((props: any, ref) => {

@@ -11,6 +11,7 @@ import AgentCreatorDialog from './AgentCreatorDialog';
 import ProjectSettingsDialog from './ProjectSettingsDialog';
 import GlobalSettingsDialog from './GlobalSettingsDialog';
 import VersionHistoryDialog from './VersionHistoryDialog';
+import ExportMenu from './ExportMenu';
 import { AIProvider } from '../lib/ai-context';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
@@ -23,7 +24,19 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
   // Navigation state
   const [view, setView] = useState<'dashboard' | 'editor'>('dashboard');
   const [isSidekickOpen, setIsSidekickOpen] = useState(true);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  // Listen for Escape key to exit focus mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFocusMode) {
+        setIsFocusMode(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFocusMode]);
 
   useEffect(() => {
     const q = query(collection(db, 'projects'), where('ownerId', '==', userId));
@@ -94,14 +107,6 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
         console.error("Error deleting project", error);
       }
     }
-  };
-
-  const [isExporting, setIsExporting] = useState(false);
-
-  const handleExportPDF = () => {
-    // Use the browser's native print engine which perfectly supports modern CSS, 
-    // bypasses iframe download restrictions, and handles CORS images natively.
-    window.print();
   };
 
   if (loading) {
@@ -252,10 +257,10 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
           </div>
           <div className="flex items-center gap-2">
             <VersionHistoryDialog projectId={projectId} currentContent={canvasContent} />
-            <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isExporting} className="rounded-full hidden sm:flex">
-              {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-              {isExporting ? "Exporting..." : "Export PDF"}
-            </Button>
+            <ExportMenu 
+              projectTitle={projects.find(p => p.id === projectId)?.title || 'Untitled Book'} 
+              htmlContent={canvasContent} 
+            />
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>

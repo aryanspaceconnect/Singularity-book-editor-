@@ -21,12 +21,12 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
-import { BookTypography, DropCap, PageBreak, CustomImage, SmartPunctuation, FontSize } from '../lib/tiptap-extensions';
+import { BookTypography, DropCap, PageBreak, CustomImage, SmartPunctuation, FontSize, SceneBreak, Callout } from '../lib/tiptap-extensions';
 import { SlashCommands, slashCommandSuggestion } from '../lib/slash-commands';
 import { useEffect, useState, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors, Check, AlertCircle, Download, Underline as UnderlineIcon, Subscript as SubscriptIcon, Superscript as SuperscriptIcon, Link as LinkIcon, CheckSquare, Table as TableIcon } from 'lucide-react';
+import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors, Check, AlertCircle, Download, Underline as UnderlineIcon, Subscript as SubscriptIcon, Superscript as SuperscriptIcon, Link as LinkIcon, CheckSquare, Table as TableIcon, Palette, Highlighter, MessageSquareWarning, Minus, Rows, Columns, Split, Trash2, Settings2 } from 'lucide-react';
 import { CircleNotch, CheckCircle, WarningCircle } from '@phosphor-icons/react';
 import ProjectSettingsDialog, { STANDARD_PAGE_SIZES } from './ProjectSettingsDialog';
 import GenerateImageDialog from './GenerateImageDialog';
@@ -105,6 +105,76 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
       
       <div className="w-px h-4 bg-border mx-1" />
       
+      <div className="flex items-center gap-1">
+        <input
+          type="color"
+          onInput={event => editor.chain().focus().setColor((event.target as HTMLInputElement).value).run()}
+          value={editor.getAttributes('textStyle').color || '#000000'}
+          className="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent"
+          title="Text Color"
+        />
+        <input
+          type="color"
+          onInput={event => editor.chain().focus().toggleHighlight({ color: (event.target as HTMLInputElement).value }).run()}
+          value={editor.getAttributes('highlight').color || '#ffff00'}
+          className="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent"
+          title="Highlight Color"
+        />
+      </div>
+
+      <div className="w-px h-4 bg-border mx-1" />
+
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+            <span className="text-xs font-medium mr-1">Font</span>
+            <ChevronDown className="h-3 w-3" />
+          </Button>} />
+        <DropdownMenuContent align="start" className="w-40">
+          <DropdownMenuItem onClick={() => editor.chain().focus().setFontFamily('Inter').run()}>Sans Serif</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setFontFamily('Merriweather').run()}>Serif</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setFontFamily('JetBrains Mono').run()}>Monospace</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontFamily().run()}>Default</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+            <span className="text-xs font-medium mr-1">Size</span>
+            <ChevronDown className="h-3 w-3" />
+          </Button>} />
+        <DropdownMenuContent align="start" className="w-32">
+          {['12px', '14px', '16px', '18px', '20px', '24px', '30px'].map(size => (
+            <DropdownMenuItem key={size} onClick={() => editor.chain().focus().setFontSize(size).run()}>
+              {size}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontSize().run()}>Default</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+            <Settings2 className="h-4 w-4 mr-1" />
+            <ChevronDown className="h-3 w-3" />
+          </Button>} />
+        <DropdownMenuContent align="start" className="w-48">
+          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Line Height</div>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('1').run()}>Single</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('1.5').run()}>1.5 Lines</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('2').run()}>Double</DropdownMenuItem>
+          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Text Indent</div>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setTextIndent('0').run()}>None</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setTextIndent('1rem').run()}>Small</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setTextIndent('2rem').run()}>Large</DropdownMenuItem>
+          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Letter Spacing</div>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setLetterSpacing('normal').run()}>Normal</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setLetterSpacing('0.05em').run()}>Wide</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().setLetterSpacing('0.1em').run()}>Extra Wide</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="w-px h-4 bg-border mx-1" />
+
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
             <Heading1 className="h-4 w-4 mr-1" />
@@ -192,14 +262,23 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
       >
         <CheckSquare className="h-4 w-4" />
       </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-        className="text-muted-foreground hover:text-foreground"
-      >
-        <TableIcon className="h-4 w-4" />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" title="Table Controls">
+            <TableIcon className="h-4 w-4" />
+          </Button>} />
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Insert Table</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} disabled={!editor.can().addColumnBefore()}>Add Column Before</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>Add Column After</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()}>Delete Column</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>Add Row Before</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>Add Row After</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()}>Delete Row</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().mergeCells().run()} disabled={!editor.can().mergeCells()}>Merge Cells</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().splitCell().run()} disabled={!editor.can().splitCell()}>Split Cell</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()} disabled={!editor.can().deleteTable()} className="text-destructive">Delete Table</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div className="w-px h-4 bg-border mx-1" />
 
@@ -221,6 +300,26 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
       >
         <Scissors className="h-4 w-4" />
       </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => editor.chain().focus().setSceneBreak().run()}
+        className="text-muted-foreground hover:text-foreground"
+        title="Insert Scene Break (***)"
+      >
+        <Minus className="h-4 w-4" />
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
+            <MessageSquareWarning className="h-4 w-4" />
+          </Button>} />
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()}>Info Callout</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'success' }).run()}>Success Callout</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()}>Warning Callout</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'error' }).run()}>Error Callout</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <InsertMediaDialog editor={editor} />
       
@@ -305,6 +404,8 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
       SmartPunctuation,
       DropCap,
       PageBreak,
+      SceneBreak,
+      Callout,
       SlashCommands.configure({
         suggestion: slashCommandSuggestion,
       })

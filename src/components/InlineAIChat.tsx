@@ -46,7 +46,7 @@ export default function InlineAIChat({ editor }: { editor: Editor }) {
         model: 'gemini-3.1-pro-preview',
         contents: `Instruction: ${prompt}\n\nSelected Text:\n${selectedText}`,
         config: {
-          systemInstruction: "You are an inline AI writing assistant. Modify the selected text according to the user's instruction. Return ONLY the modified text, formatted in HTML suitable for a rich text editor. Do NOT include markdown code blocks. Do NOT include conversational filler."
+          systemInstruction: "You are an inline AI writing assistant. Modify the selected text according to the user's instruction. Return ONLY the modified text, formatted in HTML suitable for a rich text editor. You have access to advanced formatting. Use standard HTML tags like <strong>, <em>, <u>, <s>. For colors, use <span style=\"color: #hex\">. For highlight, use <mark data-color=\"#hex\">. For font size, use <span style=\"font-size: 24px\">. For font family, use <span style=\"font-family: 'Inter'\">. For tables, use standard <table> tags. For scene breaks, use <div class=\"scene-break\"></div>. For callouts, use <div class=\"callout\" data-type=\"info|warning|success|error\">content</div>. Do NOT include markdown code blocks. Do NOT include conversational filler."
         }
       });
 

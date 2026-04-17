@@ -97,6 +97,13 @@ declare module '@tiptap/core' {
     pageBreak: {
       setPageBreak: () => ReturnType;
     };
+    sceneBreak: {
+      setSceneBreak: () => ReturnType;
+    };
+    callout: {
+      setCallout: (options?: { type?: 'info' | 'warning' | 'success' | 'error' }) => ReturnType;
+      toggleCallout: (options?: { type?: 'info' | 'warning' | 'success' | 'error' }) => ReturnType;
+    };
   }
 }
 
@@ -281,5 +288,75 @@ export const PageBreak = Node.create({
         return chain().insertContent({ type: this.name }).run();
       },
     };
+  },
+});
+
+export const SceneBreak = Node.create({
+  name: 'sceneBreak',
+  group: 'block',
+  atom: true,
+
+  parseHTML() {
+    return [{ tag: 'div.scene-break' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { class: 'scene-break my-8 text-center text-2xl tracking-[1em] text-muted-foreground font-serif' }), '***'];
+  },
+
+  addCommands() {
+    return {
+      setSceneBreak: () => ({ chain }) => {
+        return chain().insertContent({ type: this.name }).run();
+      },
+    };
+  },
+});
+
+export const Callout = Node.create({
+  name: 'callout',
+  group: 'block',
+  content: 'inline*',
+  defining: true,
+
+  addAttributes() {
+    return {
+      type: {
+        default: 'info',
+        parseHTML: element => element.getAttribute('data-type') || 'info',
+        renderHTML: attributes => {
+          return {
+            'data-type': attributes.type,
+            class: `callout p-4 my-4 rounded-lg border-l-4 ${
+              attributes.type === 'warning' ? 'bg-amber-500/10 border-amber-500 text-amber-900 dark:text-amber-200' :
+              attributes.type === 'success' ? 'bg-green-500/10 border-green-500 text-green-900 dark:text-green-200' :
+              attributes.type === 'error' ? 'bg-red-500/10 border-red-500 text-red-900 dark:text-red-200' :
+              'bg-blue-500/10 border-blue-500 text-blue-900 dark:text-blue-200'
+            }`,
+          }
+        },
+      },
+    }
+  },
+
+  parseHTML() {
+    return [
+      { tag: 'div.callout' },
+    ]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes), 0]
+  },
+
+  addCommands() {
+    return {
+      setCallout: (options) => ({ commands }) => {
+        return commands.setNode(this.name, options)
+      },
+      toggleCallout: (options) => ({ commands }) => {
+        return commands.toggleNode(this.name, 'paragraph', options)
+      },
+    }
   },
 });

@@ -15,7 +15,7 @@ const updateCanvasFunctionDeclaration: FunctionDeclaration = {
     properties: {
       newHtmlContent: {
         type: Type.STRING,
-        description: "The new HTML content for the canvas. This will replace the current content or append to it based on your logic. Use standard HTML tags like <h1>, <p>, <strong>, etc."
+        description: "The new HTML content for the canvas. Use standard HTML tags like <h1>, <p>, <strong>. Advanced formatting: <span style=\"color: #hex\">, <mark data-color=\"#hex\">, <span style=\"font-size: 24px\">, <span style=\"font-family: 'Inter'\">. For scene breaks: <div class=\"scene-break\"></div>. For callouts: <div class=\"callout\" data-type=\"info|warning|success|error\">content</div>. For tables: standard <table> tags."
       }
     },
     required: ["newHtmlContent"]
