@@ -4,8 +4,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Download, Code, FileJson, Printer, Loader2 } from 'lucide-react';
 import { saveAs } from 'file-saver';
 import TurndownService from 'turndown';
+import { STANDARD_PAGE_SIZES, PageSize } from './ProjectSettingsDialog';
 
-export default function ExportMenu({ projectTitle, htmlContent }: { projectTitle: string, htmlContent: string }) {
+export default function ExportMenu({ projectTitle, projectSettings, htmlContent }: { projectTitle: string, projectSettings: any, htmlContent: string }) {
   const [isExporting, setIsExporting] = useState(false);
 
   const safeTitle = projectTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'document';
@@ -21,7 +22,26 @@ export default function ExportMenu({ projectTitle, htmlContent }: { projectTitle
     return `<p>Failed to capture editor content.</p>`;
   };
 
-  const wrapHTML = (content: string) => `
+  const getPageDimensions = () => {
+    if (projectSettings?.pageSizeId === 'custom') {
+      const unit = projectSettings.customUnit || 'mm';
+      return {
+        width: `${projectSettings.customWidth}${unit}`,
+        height: `${projectSettings.customHeight}${unit}`,
+      };
+    }
+    const size = STANDARD_PAGE_SIZES.find(s => s.id === projectSettings?.pageSizeId) || STANDARD_PAGE_SIZES.find(s => s.id === 'a4');
+    return {
+      width: `${size?.width || 210}mm`,
+      height: `${size?.height || 297}mm`,
+    };
+  };
+
+  const wrapHTML = (content: string) => {
+    const { width, height } = getPageDimensions();
+    const margin = `${projectSettings?.margins || 20}mm`;
+    
+    return `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -101,12 +121,21 @@ export default function ExportMenu({ projectTitle, htmlContent }: { projectTitle
         .callout[data-type="success"] { background: #f0fdf4; border-left-color: #22c55e; }
         .callout[data-type="error"] { background: #fef2f2; border-left-color: #ef4444; }
         
+        hr.page-break {
+          border: none;
+          border-top: 2px dashed #d1d5db;
+          margin: 3rem 0;
+          position: relative;
+          text-align: center;
+        }
+        
         table .selectedCell { background-color: rgba(200, 200, 255, 0.4); }
 
         @media print {
-          @page { margin: 2cm; }
+          @page { size: ${width} ${height}; margin: 0; }
           body { 
-            padding: 0; 
+            padding: ${margin} !important; 
+            max-width: ${width} !important;
             -webkit-print-color-adjust: exact !important; 
             print-color-adjust: exact !important; 
           }
@@ -114,14 +143,27 @@ export default function ExportMenu({ projectTitle, htmlContent }: { projectTitle
           table { break-inside: auto; }
           tr { break-inside: avoid; break-after: auto; }
           img { break-inside: avoid; max-width: 100% !important; }
+          
+          hr.page-break {
+            margin: 0;
+            margin-left: -${margin};
+            margin-right: -${margin};
+            width: calc(100% + (${margin} * 2));
+            height: 0;
+            border: none;
+            page-break-after: always;
+            break-after: page;
+            visibility: hidden;
+          }
         }
       </style>
     </head>
-    <body class="prose prose-sm sm:prose-base lg:prose-lg font-serif text-gray-900 mx-auto max-w-[800px] p-8">
+    <body class="prose prose-sm sm:prose-base lg:prose-lg font-serif text-gray-900 mx-auto" style="max-width: ${width}; padding: ${margin};">
       ${content}
     </body>
     </html>
   `;
+  };
 
   const handleExportHTML = () => {
     const fullHtml = wrapHTML(getWysiwygHTML());

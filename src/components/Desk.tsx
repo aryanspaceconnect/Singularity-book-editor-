@@ -42,6 +42,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
     const q = query(collection(db, 'projects'), where('ownerId', '==', userId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const projData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      projData.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
       setProjects(projData);
       setLoading(false);
     });
@@ -179,14 +180,19 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((proj) => (
+                {projects.map((proj, index) => (
                   <div 
                     key={proj.id} 
                     onClick={() => openProject(proj.id)}
                     className="group relative flex flex-col justify-between p-6 h-64 bg-card border border-border rounded-[2rem] hover:border-primary/50 hover:shadow-md transition-all cursor-pointer overflow-hidden"
                   >
+                    {index === 0 && (
+                      <div className="absolute top-4 right-4 bg-primary/10 text-primary text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-full z-10">
+                        Recent
+                      </div>
+                    )}
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/50 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div>
+                    <div className="mt-2">
                       <h3 className="text-xl font-medium text-foreground">{proj.title}</h3>
                       {proj.description && (
                         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{proj.description}</p>
@@ -258,7 +264,8 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
           <div className="flex items-center gap-2">
             <VersionHistoryDialog projectId={projectId} currentContent={canvasContent} />
             <ExportMenu 
-              projectTitle={projects.find(p => p.id === projectId)?.title || 'Untitled Book'} 
+              projectTitle={projects.find(p => p.id === projectId)?.title || 'Untitled Book'}
+              projectSettings={projects.find(p => p.id === projectId) || {}}
               htmlContent={canvasContent} 
             />
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground">

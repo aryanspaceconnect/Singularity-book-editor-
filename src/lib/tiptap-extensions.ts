@@ -279,7 +279,7 @@ export const PageBreak = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['hr', mergeAttributes(HTMLAttributes, { class: 'page-break my-12 border-t-2 border-dashed border-border relative before:content-["PAGE_BREAK"] before:absolute before:left-1/2 before:-translate-x-1/2 before:-top-3 before:bg-background before:px-2 before:text-xs before:text-muted-foreground before:font-mono' })];
+    return ['hr', mergeAttributes(HTMLAttributes, { class: 'page-break' })];
   },
 
   addCommands() {

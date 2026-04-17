@@ -148,6 +148,10 @@
   white-space: pre-wrap;
   line-height: 1.6;
   color: #111827; /* Ensure text is dark on the white page */
+  height: 100%;
+}
+.tiptap {
+  outline: none;
 }
 
 .ProseMirror img {
@@ -219,6 +223,49 @@
   background-image: url("https://www.transparenttextures.com/patterns/recycled-paper.png");
 }
 
+.layout-horizontal .ProseMirror hr.page-break {
+  display: block;
+  break-after: column;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 0;
+  border: none;
+  visibility: hidden;
+}
+
+.layout-vertical .ProseMirror hr.page-break {
+  display: block;
+  break-after: page;
+  margin-left: calc(-1 * var(--page-margin, 20mm));
+  margin-right: calc(-1 * var(--page-margin, 20mm));
+  width: calc(100% + (2 * var(--page-margin, 20mm)));
+  min-width: calc(100% + (2 * var(--page-margin, 20mm)));
+  height: 64px;
+  background-color: hsl(var(--muted)/0.2);
+  border: none;
+  box-shadow: inset 0 8px 12px -6px rgba(0,0,0,0.1), inset 0 -8px 12px -6px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: visible;
+}
+
+.layout-vertical .ProseMirror hr.page-break::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed rgba(0,0,0,0.1);
+}
+
+.dark .layout-vertical .ProseMirror hr.page-break::before {
+  border-top-color: rgba(255,255,255,0.1);
+}
+
+.dark .layout-vertical .ProseMirror hr.page-break {
+  box-shadow: inset 0 8px 12px -6px rgba(0,0,0,0.4), inset 0 -8px 12px -6px rgba(0,0,0,0.4);
+}
+
 /* Print Styles */
 @media print {
   @page {
@@ -242,7 +289,20 @@
     margin: 0 !important;
     width: 100% !important;
     min-height: 100vh !important;
+  }
+
+  .ProseMirror hr.page-break {
+    margin: 0;
+    width: 100%;
+    height: 0;
+    box-shadow: none;
+    background: transparent;
     page-break-after: always;
+    break-after: page;
+  }
+
+  .ProseMirror hr.page-break::before {
+    display: none;
   }
 
   /* Ensure high quality images */
@@ -251,3 +311,4 @@
     max-width: 100% !important;
   }
 }
+

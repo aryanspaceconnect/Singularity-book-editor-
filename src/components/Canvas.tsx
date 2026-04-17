@@ -22,6 +22,7 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { BookTypography, DropCap, PageBreak, CustomImage, SmartPunctuation, FontSize, SceneBreak, Callout } from '../lib/tiptap-extensions';
+import { ChapterHeader, EpistolaryLetter, TerminalLog, BlockEpigraph, ManuscriptNote, DialogueSpoken, InternalMonologue, RedactedText, SignageText, NewspaperClipping, LitRPGQuest, LitRPGStatBlock, ScreenplayDialogue, ScreenplayCharacter, DedicationFont, ProsePoetry, TextMessage, TextMessageReply, GlossaryDefinition, TimelineDate, FleuronBreak } from '../lib/book-nodes';
 import { SlashCommands, slashCommandSuggestion } from '../lib/slash-commands';
 import { useEffect, useState, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
@@ -43,11 +44,32 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ChevronDown } from 'lucide-react';
 
-const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 'saving' | 'error' }) => {
+const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: any, saveStatus: 'saved' | 'saving' | 'error', layoutMode: 'horizontal' | 'vertical', setLayoutMode: (m: 'horizontal' | 'vertical') => void }) => {
   if (!editor) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/50 rounded-t-[2rem]">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => setLayoutMode('horizontal')}
+        className={layoutMode === 'horizontal' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}
+        title="Horizontal Pages"
+      >
+        <Columns className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={() => setLayoutMode('vertical')}
+        className={layoutMode === 'vertical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}
+        title="Vertical Scroll"
+      >
+        <Rows className="h-4 w-4" />
+      </Button>
+
+      <div className="w-px h-4 bg-border mx-1" />
+
       <Button
         variant="ghost"
         size="icon-sm"
@@ -349,6 +371,7 @@ const MenuBar = ({ editor, saveStatus }: { editor: any, saveStatus: 'saved' | 's
 };
 
 export default function Canvas({ projectId, userId }: { projectId: string, userId: string }) {
+  const [layoutMode, setLayoutMode] = useState<'horizontal' | 'vertical'>('horizontal');
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
@@ -406,6 +429,27 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
       PageBreak,
       SceneBreak,
       Callout,
+      ChapterHeader,
+      EpistolaryLetter,
+      TerminalLog,
+      BlockEpigraph,
+      ManuscriptNote,
+      DialogueSpoken,
+      InternalMonologue,
+      RedactedText,
+      SignageText,
+      NewspaperClipping,
+      LitRPGQuest,
+      LitRPGStatBlock,
+      ScreenplayDialogue,
+      ScreenplayCharacter,
+      DedicationFont,
+      ProsePoetry,
+      TextMessage,
+      TextMessageReply,
+      GlossaryDefinition,
+      TimelineDate,
+      FleuronBreak,
       SlashCommands.configure({
         suggestion: slashCommandSuggestion,
       })
@@ -506,36 +550,44 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   }
 
   const getPageDimensions = () => {
+    let w = 210, h = 297, unit = 'mm';
     if (settings.pageSizeId === 'custom') {
-      const unit = settings.customUnit || 'mm';
-      return {
-        width: `${settings.customWidth}${unit}`,
-        height: `${settings.customHeight}${unit}`,
-      };
+      unit = settings.customUnit || 'mm';
+      w = settings.customWidth || 210;
+      h = settings.customHeight || 297;
+    } else {
+      const size = STANDARD_PAGE_SIZES.find(s => s.id === settings.pageSizeId) || STANDARD_PAGE_SIZES[0];
+      w = size.width;
+      h = size.height;
     }
-    const size = STANDARD_PAGE_SIZES.find(s => s.id === settings.pageSizeId) || STANDARD_PAGE_SIZES[0];
+    const margin = settings.margins || 20;
+
     return {
-      width: `${size.width}mm`,
-      height: `${size.height}mm`,
+      pageWidth: `${w}${unit}`,
+      pageHeight: `${h}${unit}`,
+      contentWidth: `calc(${w}${unit} - ${margin * 2}mm)`,
+      contentHeight: `calc(${h}${unit} - ${margin * 2}mm)`,
+      marginVal: `${margin}mm`,
+      marginPx: margin // used for gap calculation if needed, but css calc is better
     };
   };
 
-  const { width, height } = getPageDimensions();
+  const { pageWidth, pageHeight, contentWidth, contentHeight, marginVal } = getPageDimensions();
 
   return (
-    <div className="h-full w-full flex flex-col bg-background rounded-[2rem] print:rounded-none relative overflow-hidden print:overflow-visible print:h-auto">
+    <div className={`h-full w-full flex flex-col bg-background rounded-[2rem] print:rounded-none relative overflow-hidden print:overflow-visible print:h-auto layout-${layoutMode}`}>
       <style>
         {`
           @media print {
             @page {
-              size: ${width} ${height};
+              size: ${pageWidth} ${pageHeight};
               margin: 0;
             }
           }
         `}
       </style>
       <div className="print:hidden">
-        <MenuBar editor={editor} saveStatus={saveStatus} />
+        <MenuBar editor={editor} saveStatus={saveStatus} layoutMode={layoutMode} setLayoutMode={setLayoutMode} />
         <InlineAIChat editor={editor} />
         <ImageFormatMenu editor={editor} />
         
@@ -549,39 +601,91 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 lg:p-12 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible print:h-auto">
-        <div className="max-w-fit mx-auto mb-8 flex items-center justify-center print:hidden">
-          <div className="text-center text-xs uppercase tracking-widest text-muted-foreground bg-transparent border-none focus:ring-0 focus:outline-none placeholder:text-muted-foreground/50">
+      <div className={`flex-1 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible print:h-auto ${layoutMode === 'horizontal' ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto overflow-x-hidden'}`}>
+        <div className="p-8 lg:p-12 min-w-fit flex items-center justify-center print:hidden absolute top-0 left-0 w-full z-10 pointer-events-none">
+          <div className="text-center text-xs uppercase tracking-widest text-muted-foreground bg-transparent border-none">
             {runningHeader || 'Untitled Manuscript'}
           </div>
         </div>
         
-        <div 
-          className={`transition-all duration-300 mx-auto relative shadow-2xl print:shadow-none print:border-none print:m-0 page-container texture-${settings.texture || 'none'}`}
-          style={{ 
-            width, 
-            minHeight: height,
-            backgroundColor: settings.pageColor || '#ffffff',
-            padding: `${settings.margins || 20}mm`,
-          }}
-        >
-          {settings.showGrid && (
-            <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
-              backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
-              color: 'var(--foreground)'
-            }} />
-          )}
-          {settings.showMargins && (
-            <div className="absolute pointer-events-none border border-primary/20 border-dashed" style={{
-              top: `${settings.margins || 20}mm`,
-              bottom: `${settings.margins || 20}mm`,
-              left: `${settings.margins || 20}mm`,
-              right: `${settings.margins || 20}mm`,
-            }} />
-          )}
-          <EditorContent editor={editor} />
-        </div>
+        {/* Pagination Container */}
+        {layoutMode === 'horizontal' ? (
+          <div className="h-full flex flex-col py-8 px-8 lg:px-12 w-max mx-auto">
+              <style>
+                {`
+                  @media print {
+                    .print-reset-columns {
+                      column-width: auto !important;
+                      column-gap: normal !important;
+                      height: auto !important;
+                      background-image: none !important;
+                      padding: 0 !important;
+                    }
+                  }
+                `}
+              </style>
+              <div 
+              className={`transition-all duration-300 relative print:shadow-none print:border-none print:m-0 print-reset-columns page-container texture-${settings.texture || 'none'}`}
+              style={{ 
+                boxSizing: 'border-box',
+                columnWidth: contentWidth,
+                columnFill: 'auto',
+                columnGap: `calc(${marginVal} * 2 + 40px)`, /* Desk gap between columns spans double margins plus physical desk gap */
+                height: pageHeight, /* Border-box height */
+                backgroundColor: 'transparent', 
+                padding: marginVal,
+                '--page-margin': marginVal,
+                /* Emulate Canva page boundaries visually by repeating a linear gradient */
+                backgroundImage: `linear-gradient(to right, ${settings.pageColor || '#ffffff'} 0px, ${settings.pageColor || '#ffffff'} ${pageWidth}, transparent ${pageWidth}, transparent calc(${pageWidth} + 40px))`,
+                backgroundSize: `calc(${pageWidth} + 40px) ${pageHeight}`,
+                backgroundRepeat: 'repeat-x',
+                boxShadow: 'none',
+                filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.1))',
+                color: '#111827',
+              } as React.CSSProperties}
+            >
+              {settings.showGrid && (
+                <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
+                  backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
+                  backgroundSize: '20px 20px',
+                  color: 'var(--foreground)'
+                }} />
+              )}
+              <EditorContent editor={editor} className="h-full" />
+            </div>
+          </div>
+        ) : (
+          <div className="py-8 px-8 lg:px-12 w-full flex flex-col items-center">
+            <div 
+              className={`transition-all duration-300 relative shadow-2xl print:shadow-none print:border-none print:m-0 page-container texture-${settings.texture || 'none'}`}
+              style={{ 
+                width: pageWidth,
+                minHeight: pageHeight,
+                backgroundColor: settings.pageColor || '#ffffff',
+                padding: marginVal,
+                '--page-margin': marginVal,
+                color: '#111827',
+              } as React.CSSProperties}
+            >
+              {settings.showGrid && (
+                <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
+                  backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
+                  backgroundSize: '20px 20px',
+                  color: 'var(--foreground)'
+                }} />
+              )}
+              {settings.showMargins && (
+                <div className="absolute pointer-events-none border border-primary/20 border-dashed" style={{
+                  top: marginVal,
+                  bottom: marginVal,
+                  left: marginVal,
+                  right: marginVal,
+                }} />
+              )}
+              <EditorContent editor={editor} className="min-h-full" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,8 +1,113 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Heading1, Heading2, Heading3, List, ListOrdered, Quote, Type, Scissors, Minus, MessageSquareWarning } from 'lucide-react';
+import { Heading1, Heading2, Heading3, List, ListOrdered, Quote, Type, Scissors, Minus, MessageSquareWarning, BookOpen, Mail, Terminal, FileText, StickyNote, MessageCircle, MessageSquare, ShieldAlert, Subscript, AlignCenterHorizontal, ScrollText, Calendar, Swords, Shield, Clapperboard, Users, Heart } from 'lucide-react';
 
 export const getSuggestionItems = ({ query }: { query: string }) => {
   return [
+    {
+      title: 'Chapter Header',
+      icon: <BookOpen className="w-4 h-4 text-purple-600" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setChapterHeader().run(),
+    },
+    {
+      title: 'Signage Text',
+      icon: <AlignCenterHorizontal className="w-4 h-4 text-indigo-600" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setSignageText().run(),
+    },
+    {
+      title: 'Fleuron Break',
+      icon: <Minus className="w-4 h-4 text-rose-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setFleuronBreak().run(),
+    },
+    {
+      title: 'Epigraph (Quote)',
+      icon: <Quote className="w-4 h-4 text-slate-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setBlockEpigraph().run(),
+    },
+    {
+      title: 'Prose Poetry',
+      icon: <ScrollText className="w-4 h-4 text-teal-600" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setProsePoetry().run(),
+    },
+    {
+      title: 'Epistolary Letter',
+      icon: <Mail className="w-4 h-4 text-amber-700" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setEpistolaryLetter().run(),
+    },
+    {
+      title: 'Manuscript Note',
+      icon: <StickyNote className="w-4 h-4 text-yellow-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setManuscriptNote().run(),
+    },
+    {
+      title: 'Dialogue (Spoken)',
+      icon: <MessageCircle className="w-4 h-4 text-blue-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setDialogueSpoken().run(),
+    },
+    {
+      title: 'Internal Monologue',
+      icon: <MessageSquare className="w-4 h-4 text-slate-400" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setInternalMonologue().run(),
+    },
+    {
+      title: 'Terminal / Matrix Log',
+      icon: <Terminal className="w-4 h-4 text-green-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setTerminalLog().run(),
+    },
+    {
+      title: 'Text Message (Sent)',
+      icon: <MessageSquare className="w-4 h-4 text-sky-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setTextMessage().run(),
+    },
+    {
+      title: 'Text Message (Reply)',
+      icon: <MessageSquare className="w-4 h-4 text-gray-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setTextMessageReply().run(),
+    },
+    {
+      title: 'Redacted Text',
+      icon: <ShieldAlert className="w-4 h-4 text-black" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setRedactedText().run(),
+    },
+    {
+      title: 'Newspaper Clipping',
+      icon: <FileText className="w-4 h-4 text-slate-700" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setNewspaperClipping().run(),
+    },
+    {
+      title: 'Glossary Definition',
+      icon: <List className="w-4 h-4 text-indigo-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setGlossaryDefinition().run(),
+    },
+    {
+      title: 'Timeline Date Badge',
+      icon: <Calendar className="w-4 h-4 text-blue-900" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setTimelineDate().run(),
+    },
+    {
+      title: 'Dedication Font',
+      icon: <Heart className="w-4 h-4 text-rose-400" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setDedicationFont().run(),
+    },
+    {
+      title: 'Screenplay Character',
+      icon: <Users className="w-4 h-4 text-purple-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setScreenplayCharacter().run(),
+    },
+    {
+      title: 'Screenplay Dialogue',
+      icon: <Clapperboard className="w-4 h-4 text-purple-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setScreenplayDialogue().run(),
+    },
+    {
+      title: 'LitRPG Quest',
+      icon: <Swords className="w-4 h-4 text-amber-500" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setLitRPGQuest().run(),
+    },
+    {
+      title: 'LitRPG Stat Block',
+      icon: <Shield className="w-4 h-4 text-slate-700" />,
+      command: ({ editor, range }: any) => editor.chain().focus().deleteRange(range).setLitRPGStatBlock().run(),
+    },
     {
       title: 'Heading 1',
       icon: <Heading1 className="w-4 h-4" />,
