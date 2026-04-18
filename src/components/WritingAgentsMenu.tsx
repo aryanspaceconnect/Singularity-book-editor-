@@ -90,10 +90,10 @@ export default function WritingAgentsMenu({ editor }: { editor: Editor }) {
   const agents = [
     {
       id: 'auto-format',
-      name: 'Auto-formatting Agent',
+      name: 'Layout & Formatting Agent',
       icon: <AlignLeft className="h-4 w-4 mr-2" />,
-      description: 'Fix spacing, alignment, and basic formatting',
-      prompt: 'Please format the following text properly. Fix any weird spacing, ensure consistent paragraph breaks, and apply appropriate HTML tags (like <p>, <strong>, <em>) where it makes sense. Do not change the words, just the formatting.'
+      description: 'Fix spacing, layout collisions, and boundary overflows',
+      prompt: 'Please act as a professional Typesetter and Layout Editor. Evaluate the following text and fix any formatting boundaries. If there are objects or images mentioned, add appropriate CSS floats (e.g., float-left, float-right) to ensure text wraps nicely around them without collision. Correct spacing, fix alignment, repair broken tags, ensure paragraph breaks are clean, and manage chapter or section boundaries effectively so content structurally respects the constraints of a physical printed page. Only return valid HTML.'
     },
     {
       id: 'tone-consistency',

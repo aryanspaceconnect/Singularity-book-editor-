@@ -41,8 +41,8 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
   useEffect(() => {
     const q = query(collection(db, 'projects'), where('ownerId', '==', userId));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const projData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      projData.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      const projData = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) }));
+      projData.sort((a: any, b: any) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
       setProjects(projData);
       setLoading(false);
     });

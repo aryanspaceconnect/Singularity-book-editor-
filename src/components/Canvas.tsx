@@ -27,7 +27,7 @@ import { SlashCommands, slashCommandSuggestion } from '../lib/slash-commands';
 import { useEffect, useState, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors, Check, AlertCircle, Download, Underline as UnderlineIcon, Subscript as SubscriptIcon, Superscript as SuperscriptIcon, Link as LinkIcon, CheckSquare, Table as TableIcon, Palette, Highlighter, MessageSquareWarning, Minus, Rows, Columns, Split, Trash2, Settings2 } from 'lucide-react';
+import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors, Check, AlertCircle, Download, Underline as UnderlineIcon, Subscript as SubscriptIcon, Superscript as SuperscriptIcon, Link as LinkIcon, CheckSquare, Table as TableIcon, Palette, Highlighter, MessageSquareWarning, Minus, Rows, Columns, Split, Trash2, Settings2, Plus, Undo, Redo, Sparkles, Wand2 } from 'lucide-react';
 import { CircleNotch, CheckCircle, WarningCircle } from '@phosphor-icons/react';
 import ProjectSettingsDialog, { STANDARD_PAGE_SIZES } from './ProjectSettingsDialog';
 import GenerateImageDialog from './GenerateImageDialog';
@@ -41,8 +41,24 @@ import InsertMediaDialog from './InsertMediaDialog';
 import ImageFormatMenu from './ImageFormatMenu';
 import { Button } from '@/components/ui/button';
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+} from "@/components/ui/context-menu";
 import { ChevronDown } from 'lucide-react';
+import { useAI } from '../lib/ai-context';
 
 const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: any, saveStatus: 'saved' | 'saving' | 'error', layoutMode: 'horizontal' | 'vertical', setLayoutMode: (m: 'horizontal' | 'vertical') => void }) => {
   if (!editor) return null;
@@ -372,6 +388,78 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
 
 export default function Canvas({ projectId, userId }: { projectId: string, userId: string }) {
   const [layoutMode, setLayoutMode] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [zoom, setZoom] = useState(1);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { ai } = useAI();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Zoom handlers
+  const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2.5));
+  const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.25));
+  const handleZoomReset = () => setZoom(1);
+
+  // AI Context Menu Actions
+  const handleContextAI = async (prompt: string, editor: any) => {
+    if (!editor || isProcessing) return;
+    setIsProcessing(true);
+    
+    try {
+      const { from, to, empty } = editor.state.selection;
+      let textToProcess = '';
+      let replaceFrom = from;
+      let replaceTo = to;
+      
+      if (!empty) {
+        textToProcess = editor.state.doc.textBetween(from, to, '\n');
+      } else {
+        const $from = editor.state.selection.$from;
+        const depth = $from.depth;
+        if (depth > 0) {
+          replaceFrom = $from.before(depth);
+          replaceTo = $from.after(depth);
+          textToProcess = editor.state.doc.textBetween($from.start(depth), $from.end(depth), '\n');
+        }
+      }
+
+      if (!textToProcess.trim()) return;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-pro-preview',
+        contents: `${prompt}\n\nText:\n${textToProcess}`,
+        config: {
+          systemInstruction: "You are an expert writing assistant embedded in a frictionless context menu. Return ONLY the modified text formatting in valid HTML. Do NOT include markdown blocks. Do not add conversational filler."
+        }
+      });
+
+      if (response.text) {
+        const cleanHtml = response.text.replace(/^```html\n?/, '').replace(/\n?```$/, '');
+        editor.chain().focus().deleteRange({ from: replaceFrom, to: replaceTo }).insertContent(cleanHtml).run();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Horizontal scroll mapping for mouse wheels
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || layoutMode !== 'horizontal') return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // If user is primarily scrolling vertically with a standard mouse wheel, convert to horizontal scroll
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY; // Smooth layout scroll translation
+      }
+    };
+    
+    // Explicitly set passive to false so preventDefault smoothly blocks native vertical scrolling bounce
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [layoutMode]);
+
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
@@ -401,7 +489,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         types: ['heading', 'paragraph'],
       }),
       Placeholder.configure({
-        placeholder: 'Start writing your book here, or ask the Sidekick to generate an outline...',
+        placeholder: 'Write the sentence you have never dared to write...',
       }),
       Focus.configure({
         className: 'has-focus',
@@ -454,10 +542,10 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         suggestion: slashCommandSuggestion,
       })
     ],
-    content: `<h1>Chapter 1: The Beginning</h1><p>Start writing your book here, or ask the Sidekick to generate an outline...</p>`,
+    content: ``,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose-base lg:prose-lg mx-auto focus:outline-none max-w-3xl min-h-[500px] pb-32 font-serif text-gray-900',
+        class: 'prose prose-sm sm:prose-base lg:prose-lg focus:outline-none font-serif text-gray-900 mx-auto print:max-w-none print:w-full',
       },
     },
     onUpdate: ({ editor }) => {
@@ -601,91 +689,186 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         </div>
       </div>
 
-      <div className={`flex-1 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible print:h-auto ${layoutMode === 'horizontal' ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto overflow-x-hidden'}`}>
-        <div className="p-8 lg:p-12 min-w-fit flex items-center justify-center print:hidden absolute top-0 left-0 w-full z-10 pointer-events-none">
-          <div className="text-center text-xs uppercase tracking-widest text-muted-foreground bg-transparent border-none">
-            {runningHeader || 'Untitled Manuscript'}
-          </div>
-        </div>
-        
-        {/* Pagination Container */}
-        {layoutMode === 'horizontal' ? (
-          <div className="h-full flex flex-col py-8 px-8 lg:px-12 w-max mx-auto">
-              <style>
-                {`
-                  @media print {
-                    .print-reset-columns {
-                      column-width: auto !important;
-                      column-gap: normal !important;
-                      height: auto !important;
-                      background-image: none !important;
-                      padding: 0 !important;
-                    }
-                  }
-                `}
-              </style>
-              <div 
-              className={`transition-all duration-300 relative print:shadow-none print:border-none print:m-0 print-reset-columns page-container texture-${settings.texture || 'none'}`}
-              style={{ 
-                boxSizing: 'border-box',
-                columnWidth: contentWidth,
-                columnFill: 'auto',
-                columnGap: `calc(${marginVal} * 2 + 40px)`, /* Desk gap between columns spans double margins plus physical desk gap */
-                height: pageHeight, /* Border-box height */
-                backgroundColor: 'transparent', 
-                padding: marginVal,
-                '--page-margin': marginVal,
-                /* Emulate Canva page boundaries visually by repeating a linear gradient */
-                backgroundImage: `linear-gradient(to right, ${settings.pageColor || '#ffffff'} 0px, ${settings.pageColor || '#ffffff'} ${pageWidth}, transparent ${pageWidth}, transparent calc(${pageWidth} + 40px))`,
-                backgroundSize: `calc(${pageWidth} + 40px) ${pageHeight}`,
-                backgroundRepeat: 'repeat-x',
-                boxShadow: 'none',
-                filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.1))',
-                color: '#111827',
-              } as React.CSSProperties}
-            >
-              {settings.showGrid && (
-                <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
-                  backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
-                  backgroundSize: '20px 20px',
-                  color: 'var(--foreground)'
-                }} />
-              )}
-              <EditorContent editor={editor} className="h-full" />
-            </div>
-          </div>
-        ) : (
-          <div className="py-8 px-8 lg:px-12 w-full flex flex-col items-center">
-            <div 
-              className={`transition-all duration-300 relative shadow-2xl print:shadow-none print:border-none print:m-0 page-container texture-${settings.texture || 'none'}`}
-              style={{ 
-                width: pageWidth,
-                minHeight: pageHeight,
-                backgroundColor: settings.pageColor || '#ffffff',
-                padding: marginVal,
-                '--page-margin': marginVal,
-                color: '#111827',
-              } as React.CSSProperties}
-            >
-              {settings.showGrid && (
-                <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
-                  backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
-                  backgroundSize: '20px 20px',
-                  color: 'var(--foreground)'
-                }} />
-              )}
-              {settings.showMargins && (
-                <div className="absolute pointer-events-none border border-primary/20 border-dashed" style={{
-                  top: marginVal,
-                  bottom: marginVal,
-                  left: marginVal,
-                  right: marginVal,
-                }} />
-              )}
-              <EditorContent editor={editor} className="min-h-full" />
-            </div>
-          </div>
-        )}
+      <ContextMenu>
+        <ContextMenuTrigger ref={scrollContainerRef} className={`flex-1 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible print:h-auto ${layoutMode === 'horizontal' ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto overflow-x-hidden'}`}>
+            
+            {/* Pagination Container */}
+            {layoutMode === 'horizontal' ? (
+              <div className="h-full flex flex-col py-8 px-8 lg:px-12 w-max mx-auto shadow-none">
+                  <style>
+                    {`
+                      @media print {
+                        @page {
+                          /* Native printer margins for perfect structural layout */
+                          margin: ${marginVal}; 
+                          size: ${pageWidth} ${pageHeight};
+                        }
+                        html, body {
+                          background: white !important;
+                          margin: 0 !important;
+                          padding: 0 !important;
+                        }
+                        .print-reset-columns {
+                          background-image: none !important;
+                          box-shadow: none !important;
+                          width: 100% !important;
+                          overflow: visible !important;
+                          display: block !important;
+                          zoom: 1 !important;
+                        }
+                        .print-reset-columns .ProseMirror {
+                           column-width: auto !important;
+                           column-gap: normal !important;
+                           height: auto !important;
+                        }
+                      }
+
+                      /* Force multi-column onto ProseMirror */
+                      .force-multi-column > div > .ProseMirror {
+                        column-width: ${contentWidth} !important;
+                        column-gap: calc(${marginVal} * 2 + 40px) !important;
+                        height: ${contentHeight} !important;
+                        column-fill: auto !important;
+                        min-height: ${contentHeight} !important;
+                        max-height: ${contentHeight} !important;
+                        box-sizing: border-box;
+                        overflow-y: hidden !important; 
+                      }
+                    `}
+                  </style>
+                  <div 
+                  className={`transition-all duration-300 relative print:shadow-none print:border-none print:m-0 print-reset-columns force-multi-column page-container texture-${settings.texture || 'none'}`}
+                  style={{ 
+                    boxSizing: 'content-box',
+                    backgroundColor: 'transparent', 
+                    paddingLeft: marginVal,
+                    paddingRight: marginVal,
+                    paddingTop: marginVal,
+                    paddingBottom: marginVal,
+                    '--page-margin': marginVal,
+                    /* Emulate perfect paper physical bounds */
+                    backgroundImage: `repeating-linear-gradient(to right, ${settings.pageColor || '#ffffff'} 0px, ${settings.pageColor || '#ffffff'} ${pageWidth}, transparent ${pageWidth}, transparent calc(${pageWidth} + 40px))`,
+                    backgroundSize: `calc(${pageWidth} + 40px) 100%`,
+                    backgroundRepeat: 'repeat-x',
+                    boxShadow: 'none',
+                    filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.1))',
+                    color: '#111827',
+                    width: 'max-content',
+                    minWidth: pageWidth,
+                    height: contentHeight, // Keep outer div tall so background repeats correctly
+                    zoom: zoom,
+                  } as React.CSSProperties}
+                >
+                  {settings.showGrid && (
+                    <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
+                      backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
+                      backgroundSize: '20px 20px',
+                      color: 'var(--foreground)'
+                    }} />
+                  )}
+                  <EditorContent editor={editor} className="h-full print:h-auto" />
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 px-8 lg:px-12 w-full flex flex-col items-center">
+                 <style>
+                    {`
+                      @media print {
+                        @page {
+                          /* Native printer pagination mapping */
+                          margin: ${marginVal}; 
+                          size: ${pageWidth} ${pageHeight};
+                        }
+                        html, body {
+                          background: white !important;
+                          margin: 0 !important;
+                          padding: 0 !important;
+                        }
+                      }
+                    `}
+                  </style>
+                <div 
+                  className={`transition-all duration-300 relative shadow-2xl print:shadow-none print:border-none print:m-0 print:p-0 print:w-full print:min-h-0 page-container texture-${settings.texture || 'none'}`}
+                  style={{ 
+                    width: pageWidth,
+                    minHeight: pageHeight,
+                    backgroundColor: settings.pageColor || '#ffffff',
+                    padding: marginVal,
+                    '--page-margin': marginVal,
+                    color: '#111827',
+                    boxSizing: 'border-box',
+                    zoom: zoom,
+                  } as React.CSSProperties}
+                >
+                  {settings.showGrid && (
+                    <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
+                      backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
+                      backgroundSize: '20px 20px',
+                      color: 'var(--foreground)'
+                    }} />
+                  )}
+                  {settings.showMargins && (
+                    <div className="absolute pointer-events-none border border-primary/20 border-dashed print:hidden" style={{
+                      top: marginVal,
+                      bottom: marginVal,
+                      left: marginVal,
+                      right: marginVal,
+                    }} />
+                  )}
+                  <EditorContent editor={editor} className="min-h-full print:min-h-0" />
+                </div>
+              </div>
+            )}
+        </ContextMenuTrigger>
+
+        <ContextMenuContent className="w-64 z-50">
+          <ContextMenuItem onClick={() => handleContextAI('Improve this text to be more engaging and flow better.', editor)} disabled={isProcessing}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            {isProcessing ? 'AI is thinking...' : 'Improve Writing'}
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => handleContextAI('Continue writing from this point, maintaining the tone and pushing the narrative forward.', editor)} disabled={isProcessing}>
+            <Wand2 className="h-4 w-4 mr-2" />
+            Continue Story
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => handleContextAI('Make this text more concise. Remove fluff.', editor)} disabled={isProcessing}>
+            <Scissors className="h-4 w-4 mr-2" />
+            Make Concise
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => handleContextAI('Fix any grammatical issues, typos, and improve punctuation.', editor)} disabled={isProcessing}>
+            <Check className="h-4 w-4 mr-2" />
+            Fix Grammar & Syntax
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => document.execCommand('copy')}>
+            Copy
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => document.execCommand('cut')}>
+            Cut
+          </ContextMenuItem>
+          <ContextMenuItem onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}>
+            Undo
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+
+      {/* Floating Action Bar (Zoom, Undo, Redo) */}
+      <div className="absolute bottom-6 right-6 z-50 print:hidden flex items-center gap-1 bg-background/40 backdrop-blur-md border border-border shadow-sm rounded-full p-1.5 opacity-20 hover:opacity-100 transition-opacity duration-300">
+        <Button variant="ghost" size="icon" onClick={() => editor?.chain().focus().undo().run()} disabled={!editor?.can().undo()} className="h-8 w-8 rounded-full">
+          <Undo className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={() => editor?.chain().focus().redo().run()} disabled={!editor?.can().redo()} className="h-8 w-8 rounded-full">
+          <Redo className="h-4 w-4" />
+        </Button>
+        <div className="w-px h-4 bg-border mx-1" />
+        <Button variant="ghost" size="icon" onClick={handleZoomOut} className="h-8 w-8 rounded-full">
+          <Minus className="h-4 w-4" />
+        </Button>
+        <span className="text-xs font-medium w-12 text-center cursor-pointer select-none text-foreground" onClick={handleZoomReset} title="Reset Zoom">
+          {Math.round(zoom * 100)}%
+        </span>
+        <Button variant="ghost" size="icon" onClick={handleZoomIn} className="h-8 w-8 rounded-full">
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
