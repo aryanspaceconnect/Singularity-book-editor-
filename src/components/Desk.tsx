@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, addDoc, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Button } from '@/components/ui/button';
-import { Loader2, Plus, BookOpen, Settings, LayoutDashboard, Sun, Moon, LogOut, Download, Trash2 } from 'lucide-react';
+import { Loader2, Plus, BookOpen, Settings, LayoutDashboard, Sun, Moon, LogOut, Download, Trash2, SlidersHorizontal } from 'lucide-react';
 import { Trash, Gear, SignOut, Palette, List, FilePdf, SidebarSimple, Robot } from '@phosphor-icons/react';
 import Canvas from './Canvas';
 import SidekickChat from './SidekickChat';
@@ -17,6 +17,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 export default function Desk({ userId, user, handleLogout }: { userId: string, user: any, handleLogout: () => void }) {
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<any[]>([]);
   const [canvasContent, setCanvasContent] = useState<string>('');
@@ -95,19 +96,24 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
     setView('editor');
   };
 
-  const deleteProject = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this book? This action cannot be undone.")) {
-      try {
-        await deleteDoc(doc(db, 'projects', id));
-        if (projectId === id) {
-          setView('dashboard');
-          setProjectId(null);
-        }
-      } catch (error) {
-        console.error("Error deleting project", error);
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'projects', projectToDelete));
+      if (projectId === projectToDelete) {
+        setView('dashboard');
+        setProjectId(null);
       }
+    } catch (error) {
+      console.error("Error deleting project", error);
+    } finally {
+      setProjectToDelete(null);
     }
+  };
+
+  const executeDeleteProject = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setProjectToDelete(id);
   };
 
   if (loading) {
@@ -122,6 +128,18 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
   if (view === 'dashboard' || !projectId) {
     return (
       <div className="flex flex-col h-full w-full bg-muted/30 transition-colors duration-200">
+        {projectToDelete && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-background border border-border rounded-xl p-6 shadow-xl max-w-sm w-full mx-4">
+              <h3 className="text-xl font-semibold mb-2">Delete Book?</h3>
+              <p className="text-muted-foreground mb-6">Are you sure you want to delete this book? This action cannot be undone.</p>
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setProjectToDelete(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Unified Header for Dashboard */}
         <header className="flex h-14 items-center justify-between border-b border-border px-4 shrink-0 bg-background/80 backdrop-blur-md z-10">
           <div className="flex items-center gap-2">
@@ -147,7 +165,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                   userId={user.uid} 
                   trigger={
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Settings className="mr-2 h-4 w-4" />
+                      <SlidersHorizontal className="mr-2 h-4 w-4" />
                       Global Settings
                     </DropdownMenuItem>
                   } 
@@ -213,12 +231,12 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                             projectId={proj.id} 
                             trigger={
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-full">
-                                <Gear className="h-4 w-4" />
+                                <Settings className="h-4 w-4" />
                               </Button>
                             } 
                           />
                         </div>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-full" onClick={(e) => deleteProject(proj.id, e)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive rounded-full" onClick={(e) => executeDeleteProject(proj.id, e)}>
                           <Trash className="h-4 w-4" />
                         </Button>
                         <div className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
@@ -260,6 +278,14 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
             <span className="text-sm font-medium text-foreground truncate max-w-[200px]">
               {projects.find(p => p.id === projectId)?.title || 'Untitled Book'}
             </span>
+            <ProjectSettingsDialog 
+              projectId={projectId} 
+              trigger={
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-full">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              } 
+            />
           </div>
           <div className="flex items-center gap-2">
             <VersionHistoryDialog projectId={projectId} currentContent={canvasContent} />
@@ -297,7 +323,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                   userId={user.uid} 
                   trigger={
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Settings className="mr-2 h-4 w-4" />
+                      <SlidersHorizontal className="mr-2 h-4 w-4" />
                       Global Settings
                     </DropdownMenuItem>
                   } 
