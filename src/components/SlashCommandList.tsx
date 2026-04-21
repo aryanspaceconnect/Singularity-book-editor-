@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Heading1, Heading2, Heading3, List, ListOrdered, Quote, Type, Scissors, Minus, MessageSquareWarning, BookOpen, Mail, Terminal, FileText, StickyNote, MessageCircle, MessageSquare, ShieldAlert, Subscript, AlignCenterHorizontal, ScrollText, Calendar, Swords, Shield, Clapperboard, Users, Heart } from 'lucide-react';
+import { Heading01Icon as Heading1, Heading02Icon as Heading2, Heading03Icon as Heading3, ListViewIcon as List, LeftToRightListNumberIcon as ListOrdered, QuoteDownIcon as Quote, TextIcon as Type, Scissor01Icon as Scissors, MinusSignIcon as Minus, Comment01Icon as MessageSquareWarning, BookOpen01Icon as BookOpen, Mail01Icon as Mail, ComputerTerminal01Icon as Terminal, Task01Icon as FileText, Note01Icon as StickyNote, Comment01Icon as MessageCircle, Comment01Icon as MessageSquare, Shield02Icon as ShieldAlert, TextSubscriptIcon as Subscript, AlignBoxMiddleCenterIcon as AlignCenterHorizontal, ScrollIcon as ScrollText, Calendar01Icon as Calendar, Sword01Icon as Swords, Shield01Icon as Shield, Video01Icon as Clapperboard, UserMultipleIcon as Users, FavouriteIcon as Heart } from 'hugeicons-react';
 
 export const getSuggestionItems = ({ query }: { query: string }) => {
   return [

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Download, Code, FileJson, Printer, Loader2 } from 'lucide-react';
+import { Download01Icon as Download, CodeIcon as Code, File02Icon as FileJson, PrinterIcon as Printer, Loading02Icon as Loader2 } from 'hugeicons-react';
 import { saveAs } from 'file-saver';
 import TurndownService from 'turndown';
 import { STANDARD_PAGE_SIZES, PageSize } from './ProjectSettingsDialog';

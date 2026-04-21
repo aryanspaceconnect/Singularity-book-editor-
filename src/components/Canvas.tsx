@@ -27,7 +27,7 @@ import { SlashCommands, slashCommandSuggestion } from '../lib/slash-commands';
 import { useEffect, useState, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Loader2, Bold, Italic, Strikethrough, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, List, ListOrdered, Quote, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Scissors, Check, AlertCircle, Download, Underline as UnderlineIcon, Subscript as SubscriptIcon, Superscript as SuperscriptIcon, Link as LinkIcon, CheckSquare, Table as TableIcon, Palette, Highlighter, MessageSquareWarning, Minus, Rows, Columns, Split, Trash2, Settings2, Plus, Undo, Redo, Sparkles, Wand2 } from 'lucide-react';
+import { Loading02Icon as Loader2, TextBoldIcon as Bold, TextItalicIcon as Italic, TextStrikethroughIcon as Strikethrough, Heading01Icon as Heading1, Heading02Icon as Heading2, Heading03Icon as Heading3, Heading04Icon as Heading4, Heading05Icon as Heading5, Heading02Icon as Heading6, ListViewIcon as List, LeftToRightListNumberIcon as ListOrdered, QuoteDownIcon as Quote, TextAlignLeftIcon as AlignLeft, TextAlignCenterIcon as AlignCenter, TextAlignRightIcon as AlignRight, TextAlignJustifyCenterIcon as AlignJustify, TextIcon as Type, Scissor01Icon as Scissors, CheckmarkBadge01Icon as Check, Alert01Icon as AlertCircle, Download01Icon as Download, TextUnderlineIcon as UnderlineIcon, TextSubscriptIcon as SubscriptIcon, TextSuperscriptIcon as SuperscriptIcon, Link01Icon as LinkIcon, CheckmarkBadge01Icon as CheckSquare, Table01Icon as TableIcon, PaintBoardIcon as Palette, AiMagicIcon as Highlighter, Comment01Icon as MessageSquareWarning, MinusSignIcon as Minus, Layout01Icon as Rows, Layout03Icon as Columns, ArrowLeftRightIcon as Split, Delete02Icon as Trash2, Settings02Icon as Settings2, PlusSignIcon as Plus, ArrowTurnBackwardIcon as Undo, ArrowTurnForwardIcon as Redo, MagicWand01Icon as Sparkles, MagicWand02Icon as Wand2 } from 'hugeicons-react';
 import { CircleNotch, CheckCircle, WarningCircle } from '@phosphor-icons/react';
 import ProjectSettingsDialog, { STANDARD_PAGE_SIZES } from './ProjectSettingsDialog';
 import GenerateImageDialog from './GenerateImageDialog';
@@ -41,12 +41,8 @@ import InsertMediaDialog from './InsertMediaDialog';
 import ImageFormatMenu from './ImageFormatMenu';
 import { Button } from '@/components/ui/button';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Ruler } from './Ruler';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -57,34 +53,25 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
-import { ChevronDown } from 'lucide-react';
+import { ArrowDown01Icon as ChevronDown } from 'hugeicons-react';
 import { useAI } from '../lib/ai-context';
+
+const GOOGLE_FONTS = [
+  'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Source Sans Pro',
+  'Merriweather', 'Playfair Display', 'Lora', 'PT Serif',
+  'JetBrains Mono', 'Fira Code', 'Inconsolata', 'Space Mono',
+  'Oswald', 'Raleway', 'Poppins', 'Nunito', 'Ubuntu',
+  'Dancing Script', 'Pacifico', 'Caveat', 'Satisfy'
+];
 
 const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: any, saveStatus: 'saved' | 'saving' | 'error', layoutMode: 'horizontal' | 'vertical', setLayoutMode: (m: 'horizontal' | 'vertical') => void }) => {
   if (!editor) return null;
 
+  const currentFont = editor.getAttributes('textStyle').fontFamily || 'Font';
+
   return (
     <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/50 rounded-t-[2rem]">
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => setLayoutMode('horizontal')}
-        className={layoutMode === 'horizontal' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}
-        title="Horizontal Pages"
-      >
-        <Columns className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => setLayoutMode('vertical')}
-        className={layoutMode === 'vertical' ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}
-        title="Vertical Scroll"
-      >
-        <Rows className="h-4 w-4" />
-      </Button>
-
-      <div className="w-px h-4 bg-border mx-1" />
+      {/* Lateral pages toggle removed as requested */}
 
       <Button
         variant="ghost"
@@ -164,13 +151,21 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
 
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
-            <span className="text-xs font-medium mr-1">Font</span>
+            <span className="text-xs font-medium mr-1 truncate max-w-[90px]" style={{ fontFamily: currentFont !== 'Font' ? currentFont : 'inherit' }}>
+              {currentFont.replace(/['"]/g, '')}
+            </span>
             <ChevronDown className="h-3 w-3" />
           </Button>} />
-        <DropdownMenuContent align="start" className="w-40">
-          <DropdownMenuItem onClick={() => editor.chain().focus().setFontFamily('Inter').run()}>Sans Serif</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setFontFamily('Merriweather').run()}>Serif</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setFontFamily('JetBrains Mono').run()}>Monospace</DropdownMenuItem>
+        <DropdownMenuContent align="start" className="w-48 max-h-[300px] overflow-y-auto">
+          {GOOGLE_FONTS.map(font => (
+            <DropdownMenuItem 
+              key={font} 
+              onClick={() => editor.chain().focus().setFontFamily(font).run()}
+              style={{ fontFamily: font }}
+            >
+              {font}
+            </DropdownMenuItem>
+          ))}
           <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontFamily().run()}>Default</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -466,6 +461,13 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [settings, setSettings] = useState<any>(null);
+  const [scrollX, setScrollX] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setScrollX(e.currentTarget.scrollLeft);
+    setScrollY(e.currentTarget.scrollTop);
+  };
 
   useEffect(() => {
     if (!projectId) return;
@@ -689,8 +691,24 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         </div>
       </div>
 
-      <ContextMenu>
-        <ContextMenuTrigger ref={scrollContainerRef} className={`flex-1 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible print:h-auto ${layoutMode === 'horizontal' ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto overflow-x-hidden'}`}>
+      <div className="flex-1 relative flex overflow-hidden">
+        {/* Vertical Ruler */}
+        <div className="w-[30px] border-r border-border shrink-0 bg-background z-20 print:hidden hidden sm:block">
+          <Ruler orientation="vertical" zoom={zoom} scrollOffset={scrollY} pageMargin={settings.margins || 20} pageWidth={0} />
+        </div>
+
+        <div className="flex-1 flex flex-col min-w-0 relative">
+          {/* Horizontal Ruler */}
+          <div className="h-[30px] border-b border-border shrink-0 bg-background z-20 print:hidden hidden sm:block">
+            <Ruler orientation="horizontal" zoom={zoom} scrollOffset={scrollX} pageMargin={settings.margins || 20} pageWidth={0} />
+          </div>
+
+          <ContextMenu>
+            <ContextMenuTrigger 
+              ref={scrollContainerRef} 
+              onScroll={handleScroll}
+              className={`flex-1 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible print:h-auto ${layoutMode === 'horizontal' ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto overflow-x-hidden'}`}
+            >
             
             {/* Pagination Container */}
             {layoutMode === 'horizontal' ? (
@@ -759,6 +777,19 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
                     zoom: zoom,
                   } as React.CSSProperties}
                 >
+                  <div className="absolute inset-0 pointer-events-none print:hidden flex">
+                     {/* Margin Visual Guides (Left/Right) */}
+                     <div style={{ width: marginVal, height: '100%', borderRight: '1px dashed rgba(99, 102, 241, 0.4)' }} />
+                     <div style={{ flex: 1 }} />
+                     <div style={{ width: `calc(${marginVal} + 40px)`, height: '100%', borderLeft: '1px dashed rgba(99, 102, 241, 0.4)' }} />
+                  </div>
+                  <div className="absolute inset-0 pointer-events-none print:hidden flex flex-col">
+                     {/* Margin Visual Guides (Top/Bottom) */}
+                     <div style={{ height: marginVal, width: '100%', borderBottom: '1px dashed rgba(99, 102, 241, 0.4)' }} />
+                     <div style={{ flex: 1 }} />
+                     <div style={{ height: marginVal, width: '100%', borderTop: '1px dashed rgba(99, 102, 241, 0.4)' }} />
+                  </div>
+                  
                   {settings.showGrid && (
                     <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
                       backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
@@ -800,19 +831,21 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
                     zoom: zoom,
                   } as React.CSSProperties}
                 >
+                  <div className="absolute inset-0 pointer-events-none print:hidden flex">
+                     <div style={{ width: marginVal, height: '100%', borderRight: '1px dashed rgba(99, 102, 241, 0.4)' }} />
+                     <div style={{ flex: 1 }} />
+                     <div style={{ width: marginVal, height: '100%', borderLeft: '1px dashed rgba(99, 102, 241, 0.4)' }} />
+                  </div>
+                  <div className="absolute inset-0 pointer-events-none print:hidden flex flex-col">
+                     <div style={{ height: marginVal, width: '100%', borderBottom: '1px dashed rgba(99, 102, 241, 0.4)' }} />
+                     <div style={{ flex: 1 }} />
+                     <div style={{ height: marginVal, width: '100%', borderTop: '1px dashed rgba(99, 102, 241, 0.4)' }} />
+                  </div>
                   {settings.showGrid && (
                     <div className="absolute inset-0 pointer-events-none opacity-10" style={{ 
                       backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)',
                       backgroundSize: '20px 20px',
                       color: 'var(--foreground)'
-                    }} />
-                  )}
-                  {settings.showMargins && (
-                    <div className="absolute pointer-events-none border border-primary/20 border-dashed print:hidden" style={{
-                      top: marginVal,
-                      bottom: marginVal,
-                      left: marginVal,
-                      right: marginVal,
                     }} />
                   )}
                   <EditorContent editor={editor} className="min-h-full print:min-h-0" />
@@ -870,6 +903,9 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+
+      </div>
+     </div>
     </div>
   );
 }

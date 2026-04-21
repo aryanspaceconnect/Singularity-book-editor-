@@ -1,6 +1,6 @@
 import { BubbleMenu } from '@tiptap/react/menus';
 import { Button } from '@/components/ui/button';
-import { AlignLeft, AlignCenter, AlignRight, Maximize, Minimize, Scaling, Move, Trash2 } from 'lucide-react';
+import { TextAlignLeftIcon as AlignLeft, TextAlignCenterIcon as AlignCenter, TextAlignRightIcon as AlignRight, Maximize01Icon as Maximize, Minimize01Icon as Minimize, Resize01Icon as Scaling, ArrowMoveDownLeftIcon as Move, Delete02Icon as Trash2 } from 'hugeicons-react';
 import ImageConversionDialog from './ImageConversionDialog';
 
 export default function ImageFormatMenu({ editor }: { editor: any }) {

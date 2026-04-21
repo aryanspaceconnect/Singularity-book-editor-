@@ -49,9 +49,15 @@ ${contextText.substring(0, 5000)}`,
       // but since we recreate it, we should pass history.
       // Actually, ai.chats.create takes history in config.
       const chatWithHistory = ai.chats.create({
-        model: 'gemini-3.1-flash-lite-preview',
+        model: 'gemini-3.1-pro-preview',
         config: {
-          systemInstruction: `You are a Quick Brainstorming Agent. Provide concise, creative ideas.
+          systemInstruction: `You are an elite Creative Writing & Brainstorming Agent. Your role is to serve as a fast, brilliant sounding board for the author.
+          
+CORE RULES:
+1. PITCH AMAZING IDEAS: If asked for character names, plot twists, pacing advice, or world-building, deliver highly original, genre-appropriate concepts.
+2. BE CONCISE: The user is mid-workflow. Do not write essays unless asked. Give them 3-5 punchy bullets.
+3. CONTEXT IS KING: Use the provided document text to match their exact tone, era, and established lore.
+
 Context from the user's current book/selection:
 ${contextText.substring(0, 5000)}`,
         },
@@ -81,8 +87,8 @@ ${contextText.substring(0, 5000)}`,
             Quick Brainstorm
           </DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col h-[400px] mt-4">
-          <ScrollArea className="flex-1 rounded-md border border-border bg-muted/20 p-4 mb-4" ref={scrollRef}>
+        <div className="flex flex-col h-[400px] mt-4 min-h-0">
+          <div className="flex-1 overflow-y-auto rounded-md border border-border bg-muted/20 p-4 mb-4" ref={scrollRef}>
             <div className="space-y-4">
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground text-sm mt-10">
@@ -115,9 +121,9 @@ ${contextText.substring(0, 5000)}`,
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Input 
               value={input} 
               onChange={(e) => setInput(e.target.value)} 

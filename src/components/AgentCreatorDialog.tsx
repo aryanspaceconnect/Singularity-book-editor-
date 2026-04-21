@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Bot, Key, FileText, Cpu, Fingerprint, Sparkles, Upload, Database, Wrench, X, CheckCircle2, Network } from 'lucide-react';
+import { PlusSignIcon as Plus, AiChat01Icon as Bot, Key01Icon as Key, Task01Icon as FileText, CpuIcon as Cpu, FingerPrintAddIcon as Fingerprint, MagicWand01Icon as Sparkles, Upload01Icon as Upload, Database01Icon as Database, Settings03Icon as Wrench, Cancel01Icon as X, TickDouble01Icon as CheckCircle2, AiNetworkIcon as Network } from 'hugeicons-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function AgentCreatorDialog({ userId, projectId }: { userId: string, projectId: string | null }) {

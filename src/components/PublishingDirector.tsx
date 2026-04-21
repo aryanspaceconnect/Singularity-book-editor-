@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAI } from '../lib/ai-context';
 import { Editor } from '@tiptap/react';
-import { ShieldCheck, BookOpenCheck, Wand2, FileText, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Shield01Icon as ShieldCheck, BookOpen01Icon as BookOpenCheck, MagicWand02Icon as Wand2, Task01Icon as FileText, Loading02Icon as Loader2, Alert01Icon as AlertTriangle, TickDouble01Icon as CheckCircle2 } from 'hugeicons-react';
 
 export default function PublishingDirector({ editor }: { editor: Editor }) {
   const { ai } = useAI();

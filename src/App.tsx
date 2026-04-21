@@ -10,7 +10,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import Desk from './components/Desk';
 import GlobalSettingsDialog from './components/GlobalSettingsDialog';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loading02Icon } from 'hugeicons-react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 export default function App() {
@@ -54,7 +54,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loading02Icon className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }

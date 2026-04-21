@@ -36,9 +36,16 @@ export default function ResearchDialog({ contextText = '' }: { contextText?: str
       }));
 
       const chatWithHistory = ai.chats.create({
-        model: 'gemini-3.1-flash-lite-preview', // Use a model that supports Google Search if possible, or stick to flash
+        model: 'gemini-3.1-pro-preview', // Pro model for deep research
         config: {
-          systemInstruction: `You are a Research Agent. You have access to Google Search.
+          systemInstruction: `You are an elite academic and web Research Agent. Your sole purpose is to assist the user by deeply investigating their queries using live web search. 
+
+CORE RULES:
+1. USE WEB SEARCH: Always use your Google Search tool for factual, current, or deep contextual information.
+2. SYNTHESIZE & CITE: Do not just spit out raw facts. Synthesize information thoughtfully, format it beautifully with markdown, and implicitly reference the angles you found online.
+3. CONTEXT AWARENESS: You have access to the user's current book/document text. Tailor your research to naturally fit the tone, era, or subject matter they are writing about.
+4. BE EXHAUSTIVE BUT CONCISE: Provide detailed bullet points, nuanced perspectives, and actionable information, skipping useless generic filler. 
+
 Context from the user's current book/selection:
 ${contextText.substring(0, 5000)}`,
           tools: [{ googleSearch: {} }]
@@ -69,8 +76,8 @@ ${contextText.substring(0, 5000)}`,
             Research Agent (Live Web Search)
           </DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col h-[500px] mt-4">
-          <ScrollArea className="flex-1 rounded-md border border-border bg-muted/20 p-4 mb-4" ref={scrollRef}>
+        <div className="flex flex-col h-[500px] mt-4 min-h-0">
+          <div className="flex-1 overflow-y-auto rounded-md border border-border bg-muted/20 p-4 mb-4" ref={scrollRef}>
             <div className="space-y-4">
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground text-sm mt-10">
@@ -103,9 +110,9 @@ ${contextText.substring(0, 5000)}`,
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Input 
               value={input} 
               onChange={(e) => setInput(e.target.value)} 

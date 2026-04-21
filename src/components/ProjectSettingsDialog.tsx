@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Settings, Ruler, Grid3X3, Palette, Maximize2, Key, FileText } from 'lucide-react';
+import { Settings, Ruler, Grid3X3, Palette, Maximize2, Key, FileText, Users, Plus, Trash2 } from 'lucide-react';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,7 +35,7 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
   const [settings, setSettings] = useState<any>({
     title: '',
     description: '',
-    contributors: '',
+    contributors: [], // Now an array of contributor objects
     observerApiKey: '',
     pageSizeId: 'a4',
     customWidth: 210,
@@ -47,6 +47,9 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
     texture: 'none',
     pageColor: '#ffffff',
   });
+
+  const [newContributorId, setNewContributorId] = useState('');
+  const [newContributorRole, setNewContributorRole] = useState('Editor');
 
   useEffect(() => {
     if (open && projectId) {
@@ -81,6 +84,19 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const addContributor = () => {
+    if (!newContributorId.trim()) return;
+    const currentList = Array.isArray(settings.contributors) ? settings.contributors : [];
+    updateSetting('contributors', [...currentList, { id: newContributorId.trim(), role: newContributorRole }]);
+    setNewContributorId('');
+  };
+
+  const removeContributor = (index: number) => {
+    const list = [...settings.contributors];
+    list.splice(index, 1);
+    updateSetting('contributors', list);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger ? (
@@ -102,12 +118,63 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
         </DialogHeader>
 
         <Tabs defaultValue="general" className="mt-6">
-          <TabsList className="grid w-full grid-cols-4 bg-muted rounded-xl">
+          <TabsList className="grid w-full grid-cols-5 bg-muted rounded-xl">
             <TabsTrigger value="general" className="rounded-lg data-[state=active]:bg-background"><FileText className="h-4 w-4 mr-1" /> General</TabsTrigger>
+            <TabsTrigger value="contributors" className="rounded-lg data-[state=active]:bg-background"><Users className="h-4 w-4 mr-1" /> Credits</TabsTrigger>
             <TabsTrigger value="dimensions" className="rounded-lg data-[state=active]:bg-background"><Ruler className="h-4 w-4 mr-1" /> Size</TabsTrigger>
             <TabsTrigger value="layout" className="rounded-lg data-[state=active]:bg-background"><Grid3X3 className="h-4 w-4 mr-1" /> Layout</TabsTrigger>
             <TabsTrigger value="aesthetics" className="rounded-lg data-[state=active]:bg-background"><Palette className="h-4 w-4 mr-1" /> Style</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="contributors" className="space-y-4 pt-6">
+            <div className="flex flex-col gap-2">
+              <Label>Add Contributor to Credits</Label>
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Contributor's User ID or Email" 
+                  value={newContributorId}
+                  onChange={e => setNewContributorId(e.target.value)}
+                  className="bg-muted/50 border-border flex-1"
+                />
+                <Select value={newContributorRole} onValueChange={setNewContributorRole}>
+                  <SelectTrigger className="w-[120px] bg-muted/50 border-border">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Co-Author">Co-Author</SelectItem>
+                    <SelectItem value="Editor">Editor</SelectItem>
+                    <SelectItem value="Illustrator">Illustrator</SelectItem>
+                    <SelectItem value="Reviewer">Reviewer</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={addContributor} disabled={!newContributorId.trim()}>
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">This links their profile ID with this book, crediting them publicly on the platform.</p>
+            </div>
+            
+            <div className="mt-4 border border-border rounded-xl bg-muted/20 flex flex-col gap-1 p-2">
+              {(!settings.contributors || settings.contributors.length === 0) ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">No contributors added yet.</div>
+              ) : (
+                settings.contributors.map((contributor: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-background border border-border rounded-lg">
+                    <div className="flex items-center font-mono text-sm text-foreground">
+                      <span className="font-semibold text-primary mr-2 opacity-50">@{contributor.role.substring(0,2).toUpperCase()}</span>
+                      {contributor.id}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{contributor.role}</div>
+                      <Button variant="ghost" size="icon-sm" onClick={() => removeContributor(idx)} className="h-6 w-6 text-destructive hover:bg-destructive/10">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </TabsContent>
 
           <TabsContent value="general" className="space-y-4 pt-6">
             <div className="grid gap-2">
