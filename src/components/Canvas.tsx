@@ -55,6 +55,10 @@ import {
 } from "@/components/ui/context-menu";
 import { ArrowDown01Icon as ChevronDown } from 'hugeicons-react';
 import { useAI } from '../lib/ai-context';
+import SearchWorker from '../lib/search.worker?worker';
+import { buildSearchIndex } from '../lib/biodificationParser';
+import { Block } from '../lib/search.worker';
+import Omnibar from './Omnibar';
 
 const GOOGLE_FONTS = [
   'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Source Sans Pro',
@@ -387,6 +391,39 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { ai } = useAI();
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Biodification Search System
+  const searchWorkerRef = useRef<Worker | null>(null);
+  const [isOmnibarOpen, setIsOmnibarOpen] = useState(false);
+
+  useEffect(() => {
+    searchWorkerRef.current = new SearchWorker();
+
+    const handleCmdK = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsOmnibarOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleCmdK);
+
+    return () => {
+      window.removeEventListener('keydown', handleCmdK);
+      if (searchWorkerRef.current) {
+        searchWorkerRef.current.terminate();
+      }
+    };
+  }, []);
+
+  const handleOmnibarSelect = (block: Block) => {
+    setIsOmnibarOpen(false);
+    if (editor && block.pos !== undefined) {
+      editor.commands.setTextSelection(block.pos);
+      editor.commands.focus();
+      editor.commands.scrollIntoView();
+    }
+  };
 
   // Zoom handlers
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2.5));
@@ -551,6 +588,15 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
       },
     },
     onUpdate: ({ editor }) => {
+      // Index for search omnibar
+      if (searchWorkerRef.current) {
+        const blocks = buildSearchIndex(editor);
+        searchWorkerRef.current.postMessage({
+          action: 'INDEX',
+          payload: { blocks }
+        });
+      }
+
       // Save to firestore with debounce
       setSaveStatus('saving');
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -887,6 +933,13 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
+
+      <Omnibar 
+        isOpen={isOmnibarOpen}
+        onClose={() => setIsOmnibarOpen(false)}
+        workerRef={searchWorkerRef}
+        onSelectCallback={handleOmnibarSelect}
+      />
 
       {/* Floating Action Bar (Zoom, Undo, Redo) */}
       <div className="absolute bottom-6 right-6 z-50 print:hidden flex items-center gap-1 bg-background/40 backdrop-blur-md border border-border shadow-sm rounded-full p-1.5 opacity-20 hover:opacity-100 transition-opacity duration-300">
