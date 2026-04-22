@@ -186,10 +186,8 @@ export default function VersionHistoryDialog({ projectId, currentContent }: { pr
       setOpen(val);
       if (!val) setConfirmingId(null);
     }}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground rounded-full h-8 w-8 transition-colors">
-          <ClockCounterClockwise className="h-4 w-4" />
-        </Button>
+      <DialogTrigger render={<Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground rounded-full h-8 w-8 transition-colors" />}>
+        <ClockCounterClockwise className="h-4 w-4" />
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl bg-card border-border/50 shadow-2xl p-0 overflow-hidden rounded-[1.5rem] gap-0 outline-none">
         <DialogTitle className="sr-only">Timeline</DialogTitle>

@@ -1,5 +1,4 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 
 async function startServer() {
@@ -9,6 +8,10 @@ async function startServer() {
   app.use(express.json());
 
   // API routes FIRST
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
   app.post("/api/agents/nvidia", async (req, res) => {
     const { prompt } = req.body;
     const apiKey = process.env.NVIDIA_API_KEY;
@@ -52,6 +55,7 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -65,7 +69,7 @@ async function startServer() {
     });
   }
 
-app.listen(PORT, "0.0.0.0", () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }

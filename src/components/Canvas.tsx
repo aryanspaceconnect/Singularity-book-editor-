@@ -382,7 +382,7 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
 };
 
 export default function Canvas({ projectId, userId }: { projectId: string, userId: string }) {
-  const [layoutMode, setLayoutMode] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [layoutMode, setLayoutMode] = useState<'horizontal' | 'vertical'>('vertical');
   const [zoom, setZoom] = useState(1);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { ai } = useAI();
@@ -556,8 +556,12 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => {
         const json = editor.getJSON();
+        const html = editor.getHTML();
+        const text = editor.getText();
         setDoc(docRef, {
           content: JSON.stringify(json),
+          htmlContent: html,
+          textContent: text,
           updatedAt: new Date().toISOString()
         }, { merge: true })
           .then(() => setSaveStatus('saved'))

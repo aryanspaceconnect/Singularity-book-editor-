@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Send, Bot, User, Settings2, Key } from 'lucide-react';
 import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import Markdown from 'react-markdown';
 import { useAI } from '../lib/ai-context';
 
 const updateCanvasFunctionDeclaration: FunctionDeclaration = {
@@ -19,6 +20,21 @@ const updateCanvasFunctionDeclaration: FunctionDeclaration = {
       }
     },
     required: ["newHtmlContent"]
+  }
+};
+
+const appendToCanvasFunctionDeclaration: FunctionDeclaration = {
+  name: "appendToCanvas",
+  description: "Append new HTML content to the very end of the book canvas. Use this when continuing a story or adding new sections to preserve tokens and avoid rewriting the entire document.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      appendedHtmlContent: {
+        type: Type.STRING,
+        description: "The HTML content to seamlessly append to the existing content.",
+      }
+    },
+    required: ["appendedHtmlContent"]
   }
 };
 
@@ -41,7 +57,7 @@ const updateBookMetadataFunctionDeclaration: FunctionDeclaration = {
   }
 };
 
-export default function SidekickChat({ projectId, userId, canvasContent }: { projectId: string, userId: string, canvasContent: string }) {
+export default function SidekickChat({ projectId, userId, canvasText, canvasHtml }: { projectId: string, userId: string, canvasText: string, canvasHtml: string }) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -101,33 +117,86 @@ export default function SidekickChat({ projectId, userId, canvasContent }: { pro
 
       const chat = ai.chats.create({
         model: 'gemini-3.1-pro-preview',
+        history: history,
         config: {
           thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
-          tools: [{ functionDeclarations: [updateCanvasFunctionDeclaration, updateBookMetadataFunctionDeclaration] }],
+          tools: [{ functionDeclarations: [updateCanvasFunctionDeclaration, appendToCanvasFunctionDeclaration, updateBookMetadataFunctionDeclaration] }],
           systemInstruction: `You are the Sidekick Model in the Singularity Book Studio. 
 You are the user's main point of contact. You observe the entire system (the book canvas, the worker agents, the cache writer).
 Your job is to chat with the user, understand their intent for the book, and explain what the system is doing.
-If the user asks to make a change to the book, you MUST use the 'updateCanvasContent' tool to make the changes. You act as the Cache Writer when you use this tool.
+If the user asks to modify the existing book, you MUST use the 'updateCanvasContent' tool to make the changes. 
+If the user asks to add new content, continue the story, or append new sections, you MUST use the 'appendToCanvas' tool to preserve tokens and avoid rewriting the entire document.
 If the user asks to change the book's title or description (or if it makes sense based on the story's evolution), use the 'updateBookMetadata' tool.
 
-Here is the current state of the book's canvas (in JSON format):
-${canvasContent}`,
+Here is the current text of the book's canvas:
+${canvasText}`,
         }
       });
 
-      const response = await chat.sendMessage({ message: userMsg });
+      let response = await chat.sendMessage({ message: userMsg });
       
-      const functionCalls = response.functionCalls;
+      let functionCalls = response.functionCalls;
       if (functionCalls && functionCalls.length > 0) {
+        const functionResponses = [];
         for (const call of functionCalls) {
           if (call.name === 'updateCanvasContent') {
             const args = call.args as any;
             if (args.newHtmlContent) {
+              let cleanHtml = args.newHtmlContent.trim();
+              if (cleanHtml.startsWith('```html')) {
+                cleanHtml = cleanHtml.replace(/^```html\n?/, '').replace(/```$/, '').trim();
+              } else if (cleanHtml.startsWith('```')) {
+                cleanHtml = cleanHtml.replace(/^```\w*\n?/, '').replace(/```$/, '').trim();
+              }
               const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
               await setDoc(docRef, {
-                content: args.newHtmlContent,
+                content: cleanHtml,
                 updatedAt: new Date().toISOString()
               }, { merge: true });
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: { status: "success", message: "Canvas updated successfully." }
+                }
+              });
+            } else {
+              functionResponses.push({
+                 functionResponse: {
+                   name: call.name,
+                   response: { status: "error", message: "Missing newHtmlContent" }
+                 }
+              });
+            }
+          } else if (call.name === 'appendToCanvas') {
+            const args = call.args as any;
+            if (args.appendedHtmlContent) {
+              let cleanHtml = args.appendedHtmlContent.trim();
+              if (cleanHtml.startsWith('```html')) {
+                cleanHtml = cleanHtml.replace(/^```html\n?/, '').replace(/```$/, '').trim();
+              } else if (cleanHtml.startsWith('```')) {
+                cleanHtml = cleanHtml.replace(/^```\w*\n?/, '').replace(/```$/, '').trim();
+              }
+              
+              const updatedHtml = (canvasHtml || '') + "\n" + cleanHtml;
+              const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
+              await setDoc(docRef, {
+                content: updatedHtml,
+                updatedAt: new Date().toISOString()
+              }, { merge: true });
+              
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: { status: "success", message: "Canvas appended successfully." }
+                }
+              });
+            } else {
+              functionResponses.push({
+                 functionResponse: {
+                   name: call.name,
+                   response: { status: "error", message: "Missing appendedHtmlContent" }
+                 }
+              });
             }
           } else if (call.name === 'updateBookMetadata') {
             const args = call.args as any;
@@ -137,14 +206,30 @@ ${canvasContent}`,
               if (args.title) updateData.title = args.title;
               if (args.description) updateData.description = args.description;
               await setDoc(projectRef, updateData, { merge: true });
+              functionResponses.push({
+                functionResponse: {
+                  name: call.name,
+                  response: { status: "success", message: "Metadata updated successfully." }
+                }
+              });
+            } else {
+               functionResponses.push({
+                 functionResponse: {
+                   name: call.name,
+                   response: { status: "error", message: "Missing title or description" }
+                 }
+               });
             }
           }
         }
+        
+        // Send function responses back to Gemini to get a final natural language answer
+        response = await chat.sendMessage({ message: functionResponses });
       }
 
       await addDoc(messagesRef, {
         role: 'assistant',
-        content: response.text || "I have updated the canvas.",
+        content: response.text || "I have executed your request.",
         createdAt: serverTimestamp()
       });
 
@@ -204,7 +289,11 @@ ${canvasContent}`,
                 {msg.role === 'user' ? <User className="h-4 w-4 text-muted-foreground" /> : <Bot className="h-4 w-4 text-primary" />}
               </div>
               <div className={`rounded-2xl px-4 py-2.5 text-sm max-w-[80%] ${msg.role === 'user' ? 'bg-muted text-foreground rounded-tr-sm' : 'bg-card text-card-foreground border border-border rounded-tl-sm shadow-sm'}`}>
-                {msg.content}
+                {msg.role === 'user' ? msg.content : (
+                  <div className="markdown-body prose prose-sm dark:prose-invert max-w-none">
+                    <Markdown>{msg.content}</Markdown>
+                  </div>
+                )}
               </div>
             </div>
           ))}

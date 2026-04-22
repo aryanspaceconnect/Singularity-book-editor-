@@ -13,7 +13,10 @@ import GlobalSettingsDialog from './GlobalSettingsDialog';
 import VersionHistoryDialog from './VersionHistoryDialog';
 import ExportMenu from './ExportMenu';
 import { AIProvider } from '../lib/ai-context';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
+import BookWizardDialog from './BookWizardDialog';
+import SteppingStonesTray from './SteppingStonesTray';
+import { MagicWand01Icon } from 'hugeicons-react';
 
 export default function Desk({ userId, user, handleLogout }: { userId: string, user: any, handleLogout: () => void }) {
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -21,6 +24,11 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<any[]>([]);
   const [canvasContent, setCanvasContent] = useState<string>('');
+  const [canvasHtml, setCanvasHtml] = useState<string>('');
+  const [canvasText, setCanvasText] = useState<string>('');
+  
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [steppingStonesOpen, setSteppingStonesOpen] = useState(false);
   
   // Navigation state
   const [view, setView] = useState<'dashboard' | 'editor'>('dashboard');
@@ -58,6 +66,12 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
         const data = docSnap.data();
         if (data.content) {
           setCanvasContent(data.content);
+        }
+        if (data.htmlContent) {
+          setCanvasHtml(data.htmlContent);
+        }
+        if (data.textContent) {
+          setCanvasText(data.textContent);
         }
       }
     });
@@ -182,9 +196,29 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                 <h1 className="text-3xl font-semibold text-foreground tracking-tight">Your Library</h1>
                 <p className="text-muted-foreground mt-1">Manage your books and agent engines.</p>
               </div>
-              <Button onClick={createProject} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6">
-                <Plus className="mr-2 h-4 w-4" /> New Book
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6">
+                    <Plus className="mr-2 h-4 w-4" /> New Project
+                  </Button>
+                } />
+                <DropdownMenuContent align="end" className="w-56 rounded-2xl">
+                  <DropdownMenuItem className="py-3 px-4 cursor-pointer" onClick={() => setWizardOpen(true)}>
+                    <MagicWand01Icon className="mr-3 h-5 w-5 text-amber-500" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Fast Way</span>
+                      <span className="text-xs text-muted-foreground">Guided book writing</span>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="py-3 px-4 cursor-pointer" onClick={createProject}>
+                    <Plus className="mr-3 h-5 w-5 text-primary" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Freedom Way</span>
+                      <span className="text-xs text-muted-foreground">Blank canvas</span>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {projects.length === 0 ? (
@@ -192,8 +226,8 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                 <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
                 <div className="text-foreground font-medium">No books found.</div>
                 <p className="text-muted-foreground text-sm mt-1 mb-6">Start your first project to initialize the agent engine.</p>
-                <Button onClick={createProject} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full">
-                  Create New Book
+                <Button onClick={() => setWizardOpen(true)} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full">
+                  <MagicWand01Icon className="mr-2 h-4 w-4" /> Use Fast Way
                 </Button>
               </div>
             ) : (
@@ -250,6 +284,16 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
             )}
           </div>
         </div>
+        
+        <BookWizardDialog 
+          open={wizardOpen} 
+          onOpenChange={setWizardOpen} 
+          userId={userId} 
+          onProjectCreated={(id) => {
+            setProjectId(id);
+            setView('editor');
+          }} 
+        />
       </div>
     );
   }
@@ -288,6 +332,16 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
             />
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSteppingStonesOpen(!steppingStonesOpen)}
+              className={`rounded-full ${steppingStonesOpen ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              Stepping Stones
+            </Button>
+            <div className="h-4 w-px bg-border mx-1" />
             <VersionHistoryDialog projectId={projectId} currentContent={canvasContent} />
             <ExportMenu 
               projectTitle={projects.find(p => p.id === projectId)?.title || 'Untitled Book'}
@@ -343,6 +397,14 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
         </header>
 
         <div className="flex flex-1 overflow-hidden print:overflow-visible print:h-auto p-4 print:p-0 gap-4">
+          
+          {/* Stepping Stones Tray */}
+          {steppingStonesOpen && (
+            <div className="print:hidden h-full rounded-[2rem] border border-border overflow-hidden shadow-xl transition-all duration-300 ease-in-out shrink-0">
+               <SteppingStonesTray projectId={projectId} userId={userId} onClose={() => setSteppingStonesOpen(false)} />
+            </div>
+          )}
+
           {/* Main Canvas */}
           <div className="flex-1 overflow-hidden print:overflow-visible print:h-auto bg-background rounded-[2rem] print:rounded-none border border-border print:border-none shadow-xl print:shadow-none relative">
             <Canvas projectId={projectId} userId={userId} />
@@ -351,7 +413,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
           {/* Sidebar / Chat (Collapsible) */}
           {isSidekickOpen && (
             <div className="print:hidden w-96 bg-background rounded-[2rem] border border-border shadow-xl flex flex-col shrink-0 overflow-hidden transition-all duration-300 ease-in-out">
-              <SidekickChat projectId={projectId} userId={userId} canvasContent={canvasContent} />
+              <SidekickChat projectId={projectId} userId={userId} canvasText={canvasText || canvasContent} canvasHtml={canvasHtml} />
             </div>
           )}
         </div>
