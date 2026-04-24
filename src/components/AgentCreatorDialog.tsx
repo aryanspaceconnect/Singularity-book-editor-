@@ -25,6 +25,7 @@ export default function AgentCreatorDialog({ userId, projectId }: { userId: stri
   const [agentId, setAgentId] = useState('');
   const [memoryLimit, setMemoryLimit] = useState('1024');
   const [isImproving, setIsImproving] = useState(false);
+  const [initialMemoryFiles, setInitialMemoryFiles] = useState<{name: string, size: number, type: string, file: File, folder?: string}[]>([]);
 
   useEffect(() => {
     if (!userId) return;
@@ -66,8 +67,28 @@ export default function AgentCreatorDialog({ userId, projectId }: { userId: stri
         // We store it here for the prototype's intelligence layer.
         encryptedApiKey: apiKey ? 'ENCRYPTED_STUB_' + apiKey.substring(0, 4) + '...' : null,
       });
+
+      // Upload initial memory files to vault_files
+      for (const item of initialMemoryFiles) {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          const content = event.target?.result as string;
+          await addDoc(collection(db, 'users', userId, 'vault_files'), {
+            name: item.name,
+            type: item.type || (item.name.endsWith('.md') ? 'markdown' : 'text'),
+            content: content,
+            folder: item.folder || 'root',
+            agentId: agentId, // tagged to this agent
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+        };
+        reader.readAsDataURL(item.file);
+      }
+
       setIsCreating(false);
       setOpen(true); // Re-open roster to show the new agent
+      setInitialMemoryFiles([]);
     } catch (error) {
       console.error("Error creating agent:", error);
     }
@@ -289,11 +310,51 @@ export default function AgentCreatorDialog({ userId, projectId }: { userId: stri
                       Upload PDFs, images, or markdown files to seed the agent's memory bank.
                     </p>
                     
-                    <div className="border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center justify-center text-center bg-background hover:bg-muted transition-colors cursor-pointer">
+                    <input 
+                      type="file" 
+                      multiple 
+                      className="hidden" 
+                      id="agent-memory-upload"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        const newFiles = files.map(f => ({ name: f.name, size: f.size, type: f.type, file: f }));
+                        setInitialMemoryFiles(prev => [...prev, ...newFiles]);
+                      }}
+                    />
+                    <label 
+                      htmlFor="agent-memory-upload"
+                      className="border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center justify-center text-center bg-background hover:bg-muted transition-colors cursor-pointer"
+                    >
                       <Upload className="h-8 w-8 text-muted-foreground mb-3" />
                       <span className="text-sm font-medium text-foreground">Drop files here</span>
                       <span className="text-xs text-muted-foreground mt-1">or click to browse</span>
-                    </div>
+                    </label>
+                    {initialMemoryFiles.length > 0 && (
+                      <div className="space-y-2 mt-4 max-h-32 overflow-y-auto pr-2">
+                        {initialMemoryFiles.map((f, i) => (
+                           <div key={i} className="flex flex-col bg-background p-2 rounded border border-border">
+                             <div className="flex items-center justify-between">
+                               <span className="text-xs font-medium truncate max-w-[150px]">{f.name}</span>
+                               <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => setInitialMemoryFiles(prev => prev.filter((_, idx) => idx !== i))}>
+                                 <X className="h-3 w-3 text-muted-foreground" />
+                               </Button>
+                             </div>
+                             <div className="flex gap-2 mt-1">
+                               <Input 
+                                 placeholder="Folder (optional)" 
+                                 className="h-6 text-[10px] px-1" 
+                                 value={f.folder || ''}
+                                 onChange={(e) => {
+                                   const newFiles = [...initialMemoryFiles];
+                                   newFiles[i].folder = e.target.value;
+                                   setInitialMemoryFiles(newFiles);
+                                 }}
+                               />
+                             </div>
+                           </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-6 bg-muted/50 p-6 rounded-[2rem] border border-border">

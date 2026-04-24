@@ -595,7 +595,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
     },
     onUpdate: ({ editor, transaction }) => {
       // Clear AI highlights if user modifies anything
-      if (transaction.docChanged && transaction.meta && !transaction.meta.aiUpdate) {
+      if (transaction.docChanged && !transaction.getMeta('aiUpdate')) {
         let hasHighlights = false;
         editor.state.doc.descendants((node) => {
           if (node.marks.find(m => m.type.name === 'highlight' && m.attrs.color === '#fcd34d33')) {

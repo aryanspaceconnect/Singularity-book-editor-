@@ -58,6 +58,20 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["content", "updatedAt"]
+    },
+    "VaultFile": {
+      "title": "Vault File",
+      "description": "Context files, notes, and folders",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "content": { "type": "string" },
+        "folder": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "type", "createdAt", "updatedAt"]
     }
   },
   "firestore": {
@@ -65,9 +79,17 @@
       "schema": { "$ref": "#/entities/User" },
       "description": "User profiles"
     },
+    "/users/{userId}/vault_files/{fileId}": {
+      "schema": { "$ref": "#/entities/VaultFile" },
+      "description": "Universal vault files shared across projects"
+    },
     "/projects/{projectId}": {
       "schema": { "$ref": "#/entities/Project" },
       "description": "Book projects"
+    },
+    "/projects/{projectId}/files/{fileId}": {
+      "schema": { "$ref": "#/entities/VaultFile" },
+      "description": "Project-specific vault files"
     },
     "/projects/{projectId}/logs/{logId}": {
       "schema": { "$ref": "#/entities/Log" },
