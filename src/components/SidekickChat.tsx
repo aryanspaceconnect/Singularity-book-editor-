@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { GoogleGenAI, ThinkingLevel, Type, FunctionDeclaration } from '@google/genai';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Bot, User, Settings2, Key } from 'lucide-react';
+import { Send, Bot, User, Settings2, Key, Plus } from 'lucide-react';
 import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import Markdown from 'react-markdown';
@@ -95,6 +95,26 @@ export default function SidekickChat({ projectId, userId, canvasText, canvasHtml
     return () => unsubscribe();
   }, [projectId]);
 
+  const sidekickFileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      const snippet = text.substring(0, 500) + (text.length > 500 ? '...' : '');
+      await addDoc(messagesRef, {
+        role: 'user',
+        content: `Attached file: ${file.name}\n\nContents:\n${text}`,
+        displayContent: `[Attached Document: ${file.name}]\n\n*${snippet}*`,
+        createdAt: serverTimestamp()
+      });
+    };
+    reader.readAsText(file);
+  };
+
   const handleSend = async () => {
     if (!input.trim()) return;
     
@@ -128,6 +148,14 @@ If the user asks to modify the existing book, you MUST use the 'updateCanvasCont
 If the user asks to add new content, continue the story, or append new sections, you MUST use the 'appendToCanvas' tool to preserve tokens and avoid rewriting the entire document.
 If the user asks to change the book's title or description (or if it makes sense based on the story's evolution), use the 'updateBookMetadata' tool.
 
+CRITICAL WRITING CONSTRAINTS:
+- NEVER use common AI filler phrases like "In conclusion", "As we delve into", "It's important to note", or summarize outputs needlessly.
+- Be extremely direct and let the writing speak for itself.
+- When generating chapters, ensure they are substantial and long (minimum 8-10 paragraphs), do not just write 2 short paragraphs and stop unless explicitly asked.
+- Avoid flowery, cliché language. Follow the user's Tone & Style preferences strictly.
+
+NOTE REGARDING MODIFICATIONS: You do not have permission to change the canvas directly. Using 'updateCanvasContent' or 'appendToCanvas' will propose the change to the user, creating a pending action that they must confirm. When the tool returns "pending", tell the user you have prepared the change and ask them to approve it using the buttons in the chat.
+
 Here is the current text of the book's canvas:
 ${canvasText}`,
         }
@@ -148,15 +176,20 @@ ${canvasText}`,
               } else if (cleanHtml.startsWith('```')) {
                 cleanHtml = cleanHtml.replace(/^```\w*\n?/, '').replace(/```$/, '').trim();
               }
-              const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
-              await setDoc(docRef, {
-                content: cleanHtml,
-                updatedAt: new Date().toISOString()
-              }, { merge: true });
+              await addDoc(messagesRef, {
+                role: 'assistant',
+                content: 'I have prepared a complete rewrite of the document. Please review and confirm to overwrite the current canvas using the buttons below.',
+                proposal: {
+                  type: 'update',
+                  html: cleanHtml
+                },
+                createdAt: serverTimestamp()
+              });
+              
               functionResponses.push({
                 functionResponse: {
                   name: call.name,
-                  response: { status: "success", message: "Canvas updated successfully." }
+                  response: { status: "pending", message: "Proposed to user. Waiting for confirmation. Stop writing and await their response." }
                 }
               });
             } else {
@@ -178,16 +211,21 @@ ${canvasText}`,
               }
               
               const updatedHtml = (canvasHtml || '') + "\n" + cleanHtml;
-              const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
-              await setDoc(docRef, {
-                content: updatedHtml,
-                updatedAt: new Date().toISOString()
-              }, { merge: true });
+              
+              await addDoc(messagesRef, {
+                role: 'assistant',
+                content: 'I have generated additional content to append. Please review and confirm using the buttons below.',
+                proposal: {
+                  type: 'append',
+                  html: updatedHtml
+                },
+                createdAt: serverTimestamp()
+              });
               
               functionResponses.push({
                 functionResponse: {
                   name: call.name,
-                  response: { status: "success", message: "Canvas appended successfully." }
+                  response: { status: "pending", message: "Proposed to user. Waiting for confirmation. Stop writing and await their response." }
                 }
               });
             } else {
@@ -245,6 +283,41 @@ ${canvasText}`,
     }
   };
 
+  const handleApproveProposal = async (msgId: string, proposal: any) => {
+    try {
+      if (proposal.type === 'update') {
+        await addDoc(collection(db, 'projects', projectId, 'versions'), {
+          name: 'Backup before AI rewrite',
+          content: canvasHtml,
+          type: 'auto',
+          createdAt: serverTimestamp()
+        });
+      }
+
+      const docRef = doc(db, 'projects', projectId, 'canvas', 'main');
+      await setDoc(docRef, {
+        content: proposal.html,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      await setDoc(doc(db, 'projects', projectId, 'messages', msgId), {
+        proposalStatus: 'approved'
+      }, { merge: true });
+    } catch (err) {
+      console.error("Error approving proposal:", err);
+    }
+  };
+
+  const handleRejectProposal = async (msgId: string) => {
+    try {
+      await setDoc(doc(db, 'projects', projectId, 'messages', msgId), {
+        proposalStatus: 'rejected'
+      }, { merge: true });
+    } catch (err) {
+      console.error("Error rejecting proposal:", err);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-background">
       <div className="p-5 border-b border-border bg-muted/50 flex items-center justify-between">
@@ -290,8 +363,24 @@ ${canvasText}`,
               </div>
               <div className={`rounded-2xl px-4 py-2.5 text-sm max-w-[80%] ${msg.role === 'user' ? 'bg-muted text-foreground rounded-tr-sm' : 'bg-card text-card-foreground border border-border rounded-tl-sm shadow-sm'}`}>
                 {msg.role === 'user' ? msg.content : (
-                  <div className="markdown-body prose prose-sm dark:prose-invert max-w-none">
-                    <Markdown>{msg.content}</Markdown>
+                  <div className="flex flex-col gap-3">
+                    <div className="markdown-body prose prose-sm dark:prose-invert max-w-none">
+                      <Markdown>{msg.content}</Markdown>
+                    </div>
+                    {msg.proposal && !msg.proposalStatus && (
+                      <div className="mt-2 p-3 bg-muted/50 rounded-lg border border-border flex flex-col gap-2">
+                        <p className="text-xs font-medium">Pending Action: {msg.proposal.type === 'update' ? 'Overwrite Canvas' : 'Append to Canvas'}</p>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleApproveProposal(msg.id, msg.proposal)} className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-8">Approve</Button>
+                          <Button size="sm" onClick={() => handleRejectProposal(msg.id)} variant="outline" className="flex-1 text-xs h-8">Reject</Button>
+                        </div>
+                      </div>
+                    )}
+                    {msg.proposalStatus && (
+                      <div className={`mt-2 p-2 rounded-md text-xs font-medium border ${msg.proposalStatus === 'approved' ? 'bg-green-500/10 text-green-600 border-green-500/20' : 'bg-destructive/10 text-destructive border-destructive/20'}`}>
+                        {msg.proposalStatus === 'approved' ? '✓ Approved and applied' : '✕ Rejected'}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -314,6 +403,22 @@ ${canvasText}`,
 
       <div className="p-4 border-t border-border bg-muted/50">
         <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex gap-2">
+          <input 
+            type="file" 
+            accept=".txt,.md" 
+            ref={sidekickFileInputRef} 
+            className="hidden" 
+            onChange={handleFileUpload} 
+          />
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="icon" 
+            className="shrink-0 text-muted-foreground hover:text-foreground rounded-full" 
+            onClick={() => sidekickFileInputRef.current?.click()}
+          >
+            <Plus className="h-5 w-5" />
+          </Button>
           <Input 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 

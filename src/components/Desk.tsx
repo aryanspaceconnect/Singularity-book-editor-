@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, addDoc, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Button } from '@/components/ui/button';
-import { Loader2, Plus, BookOpen, Settings, LayoutDashboard, Sun, Moon, LogOut, Download, Trash2, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Plus, BookOpen, Settings, LayoutDashboard, Sun, Moon, LogOut, Download, Trash2, SlidersHorizontal, Search } from 'lucide-react';
 import { Trash, Gear, SignOut, Palette, List, FilePdf, SidebarSimple, Robot } from '@phosphor-icons/react';
 import Canvas from './Canvas';
 import SidekickChat from './SidekickChat';
@@ -339,9 +339,19 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
               className={`rounded-full ${steppingStonesOpen ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             >
               <BookOpen className="h-4 w-4 mr-2" />
-              Stepping Stones
+              Vault
             </Button>
             <div className="h-4 w-px bg-border mx-1" />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => window.dispatchEvent(new CustomEvent('open-search'))}
+              className="text-muted-foreground hover:text-foreground rounded-full"
+              title="Search (Cmd+K)"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              Search
+            </Button>
             <VersionHistoryDialog projectId={projectId} currentContent={canvasContent} />
             <ExportMenu 
               projectTitle={projects.find(p => p.id === projectId)?.title || 'Untitled Book'}

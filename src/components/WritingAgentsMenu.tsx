@@ -74,9 +74,24 @@ export default function WritingAgentsMenu({ editor }: { editor: Editor }) {
 
       if (currentText) {
         if (action === 'append') {
-          editor.chain().focus().setTextSelection(replaceTo).insertContent('<br/>' + currentText).run();
+           const insertPos = replaceTo;
+           editor.chain()
+             .focus()
+             .setTextSelection(insertPos)
+             .insertContent('<br/>' + currentText, { updateSelection: false })
+             .setTextSelection({ from: insertPos, to: insertPos + currentText.length })
+             .setHighlight({ color: '#fcd34d33' }) // Soft amber highlight
+             .setTextSelection(insertPos + currentText.length)
+             .run();
         } else {
-          editor.chain().focus().deleteRange({ from: replaceFrom, to: replaceTo }).insertContent(currentText).run();
+           editor.chain()
+             .focus()
+             .deleteRange({ from: replaceFrom, to: replaceTo })
+             .insertContent(currentText, { updateSelection: false })
+             .setTextSelection({ from: replaceFrom, to: replaceFrom + currentText.length })
+             .setHighlight({ color: '#fcd34d33' })
+             .setTextSelection(replaceFrom + currentText.length)
+             .run();
         }
       }
 

@@ -405,11 +405,17 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         setIsOmnibarOpen(prev => !prev);
       }
     };
+    
+    const handleOpenSearch = () => {
+      setIsOmnibarOpen(true);
+    };
 
     window.addEventListener('keydown', handleCmdK);
+    window.addEventListener('open-search', handleOpenSearch);
 
     return () => {
       window.removeEventListener('keydown', handleCmdK);
+      window.removeEventListener('open-search', handleOpenSearch);
       if (searchWorkerRef.current) {
         searchWorkerRef.current.terminate();
       }
@@ -587,7 +593,21 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         class: 'prose prose-sm sm:prose-base lg:prose-lg focus:outline-none font-serif text-gray-900 mx-auto print:max-w-none print:w-full',
       },
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor, transaction }) => {
+      // Clear AI highlights if user modifies anything
+      if (transaction.docChanged && transaction.meta && !transaction.meta.aiUpdate) {
+        let hasHighlights = false;
+        editor.state.doc.descendants((node) => {
+          if (node.marks.find(m => m.type.name === 'highlight' && m.attrs.color === '#fcd34d33')) {
+             hasHighlights = true;
+          }
+        });
+
+        if (hasHighlights) {
+           editor.commands.unsetHighlight();
+        }
+      }
+
       // Index for search omnibar
       if (searchWorkerRef.current) {
         const blocks = buildSearchIndex(editor);

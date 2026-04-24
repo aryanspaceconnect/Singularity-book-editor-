@@ -70,7 +70,7 @@ export default function SteppingStonesTray({ projectId, userId, onClose }: Stepp
       <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 text-foreground font-medium">
           <BrainCircuit className="h-4 w-4 text-primary" />
-          Stepping Stones
+          Vault (Ideas/Files)
         </div>
         {onClose && (
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
@@ -109,7 +109,7 @@ export default function SteppingStonesTray({ projectId, userId, onClose }: Stepp
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center p-6 text-muted-foreground text-sm">
-                No files found. Add stepping stones to guide the AI.
+                No files found. Add resources to your vault to guide the AI.
               </div>
             ) : (
               <div className="space-y-1">

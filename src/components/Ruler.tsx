@@ -13,15 +13,23 @@ export const Ruler: React.FC<RulerProps> = ({ orientation, zoom, scrollOffset, p
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    const handleResize = () => {
-      const container = canvasRef.current?.parentElement;
-      if (container) {
-        setSize({ width: container.clientWidth, height: container.clientHeight });
+    const parent = canvasRef.current?.parentElement;
+    if (!parent) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === parent) {
+          setSize({ width: entry.contentRect.width, height: entry.contentRect.height });
+        }
       }
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    });
+
+    observer.observe(parent);
+    
+    // Initial size
+    setSize({ width: parent.clientWidth, height: parent.clientHeight });
+
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -46,54 +54,96 @@ export const Ruler: React.FC<RulerProps> = ({ orientation, zoom, scrollOffset, p
     ctx.textBaseline = 'top';
 
     const isHorizontal = orientation === 'horizontal';
-    const tickSpacing = 10 * zoom; 
-    const largeTickSpacing = 100 * zoom;
-    
-    // Draw tick marks
-    const offset = scrollOffset; 
     const length = isHorizontal ? size.width : size.height;
 
-    // Start drawing at negative offset to support scrolling offset smoothly
-    const startPos = - (offset % largeTickSpacing);
+    const NICE_INTERVALS = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000];
     
-    // Physical start calculation for label numbers
-    const startValue = Math.floor(offset / largeTickSpacing) * 100;
+    // Find the smallest interval where the spacing on screen is at least 60px
+    const minScreenSpacing = 60;
+    
+    let majorInterval = NICE_INTERVALS.find(v => v * zoom >= minScreenSpacing);
+    if (!majorInterval) majorInterval = 100;
+    
+    // Determine minor ticks per major interval. Typically 10.
+    let minorTicksPerMajor = 10;
+    let minorInterval = majorInterval / minorTicksPerMajor;
+    
+    // Fallback if minor ticks are too squished on screen
+    if (minorInterval * zoom < 5) {
+      minorTicksPerMajor = 5;
+      minorInterval = majorInterval / minorTicksPerMajor;
+    }
+    if (minorInterval * zoom < 5) {
+      minorTicksPerMajor = 1;
+      minorInterval = majorInterval; // No minor ticks
+    }
+    
+    const startIdx = Math.floor(scrollOffset / minorInterval);
+    const endIdx = startIdx + Math.ceil((length / zoom) / minorInterval) + 1;
 
-    for (let i = startPos; i < length; i += tickSpacing) {
-      // Calculate real value for this tick
-      const value = startValue + ((i - startPos) / zoom);
-      
-      const isLargeTick = Math.abs(value % 100) < 1; // Tolerance for floats
-      const isMediumTick = Math.abs(value % 50) < 1;
-      
-      const pos = Math.round(i);
-      
-      ctx.beginPath();
-      if (isHorizontal) {
-        const tickHeight = isLargeTick ? size.height : isMediumTick ? 6 : 3;
-        const tickY = size.height - tickHeight;
-        ctx.moveTo(pos, tickY);
-        ctx.lineTo(pos, size.height);
+    for (let i = startIdx; i <= endIdx; i++) {
+        const docValue = i * minorInterval;
+        const screenPos = (docValue - scrollOffset) * zoom;
         
-        if (isLargeTick) {
-          ctx.fillText(Math.round(value).toString(), pos + 3, 2);
-        }
-      } else {
-        const tickWidth = isLargeTick ? size.width : isMediumTick ? 6 : 3;
-        const tickX = size.width - tickWidth;
-        ctx.moveTo(tickX, pos);
-        ctx.lineTo(size.width, pos);
+        if (screenPos < -50 || screenPos > length + 50) continue;
         
-        if (isLargeTick && pos > 0) { // Avoid drawing 0 text overlap if near corner
-          ctx.save();
-          ctx.translate(2, pos + 3);
-          // Optional text rotation for vertical
-          const text = Math.round(value).toString();
-          ctx.fillText(text, 0, 0);
-          ctx.restore();
+        const eps = minorInterval * 0.01;
+        const closestMajor = Math.round(docValue / majorInterval) * majorInterval;
+        const isMajorTick = Math.abs(docValue - closestMajor) < eps;
+        
+        const closestMedium = Math.round(docValue / (majorInterval / 2)) * (majorInterval / 2);
+        const isMediumTick = Math.abs(docValue - closestMedium) < eps;
+        
+        const pos = Math.round(screenPos);
+        
+        ctx.beginPath();
+        if (isHorizontal) {
+          const tickHeight = isMajorTick ? size.height : isMediumTick ? 6 : 3;
+          const tickY = size.height - tickHeight;
+          ctx.moveTo(pos, tickY);
+          ctx.lineTo(pos, size.height);
+          
+          if (isMajorTick) {
+            ctx.fillText(Math.round(docValue).toString(), pos + 4, 3);
+          }
+        } else {
+          const tickWidth = isMajorTick ? size.width : isMediumTick ? 6 : 3;
+          const tickX = size.width - tickWidth;
+          ctx.moveTo(tickX, pos);
+          ctx.lineTo(size.width, pos);
+          
+          if (isMajorTick && pos > 0) { // Avoid overlap at corner
+            ctx.save();
+            ctx.translate(2, pos + 4);
+            // Rotate 90 deg clockwise to be readable vertically
+            ctx.rotate(Math.PI / 2);
+            ctx.fillText(Math.round(docValue).toString(), 4, -9);
+            ctx.restore();
+          }
         }
+        ctx.stroke();
+    }
+
+    // Bonus: Page Margin Guideline
+    if (pageMargin > 0) {
+      const MM_TO_PX = 3.779527559;
+      const marginPx = pageMargin * MM_TO_PX;
+      const marginScreenPos = (marginPx - scrollOffset) * zoom;
+      
+      if (marginScreenPos > 0 && marginScreenPos < length) {
+        ctx.beginPath();
+        ctx.strokeStyle = '#6366f1'; // tailwind indigo-500
+        ctx.setLineDash([4, 4]); // Dashed line
+        if (isHorizontal) {
+          ctx.moveTo(marginScreenPos, 0);
+          ctx.lineTo(marginScreenPos, size.height);
+        } else {
+          ctx.moveTo(0, marginScreenPos);
+          ctx.lineTo(size.width, marginScreenPos);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
       }
-      ctx.stroke();
     }
 
   }, [size, zoom, scrollOffset, orientation, pageMargin]);

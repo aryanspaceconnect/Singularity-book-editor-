@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { History, GitCommit, RotateCcw, Loader2, Sparkles, Clock, AlertTriangle } from 'lucide-react';
+import { History, GitCommit, RotateCcw, Loader2, Sparkles, Clock, AlertTriangle, Trash2 } from 'lucide-react';
 import { ClockCounterClockwise } from '@phosphor-icons/react';
 import { collection, addDoc, onSnapshot, query, serverTimestamp, doc, setDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -181,6 +181,18 @@ export default function VersionHistoryDialog({ projectId, currentContent }: { pr
     }
   };
 
+  const handleDeleteVersion = async (versionId: string) => {
+    try {
+      await deleteDoc(doc(db, 'projects', projectId, 'versions', versionId));
+      if (confirmingId === versionId) {
+        setConfirmingId(null);
+      }
+    } catch (error: any) {
+      console.error("Error deleting version:", error);
+      setError("Failed to delete: " + error.message);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(val) => {
       setOpen(val);
@@ -283,15 +295,26 @@ export default function VersionHistoryDialog({ projectId, currentContent }: { pr
                                   {v.createdAt?.toDate ? format(v.createdAt.toDate(), 'MMM d, yyyy h:mm a') : 'Just now'}
                                 </div>
                               </div>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => setConfirmingId(v.id)} 
-                                className="opacity-0 group-hover:opacity-100 transition-opacity text-xs h-8 rounded-full px-4 border-border/60 shadow-sm shrink-0"
-                              >
-                                <RotateCcw className="w-3 h-3 mr-2" />
-                                Restore
-                              </Button>
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => setConfirmingId(v.id)} 
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-xs h-8 rounded-full px-4 border-border/60 shadow-sm shrink-0"
+                                >
+                                  <RotateCcw className="w-3 h-3 mr-2" />
+                                  Restore
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteVersion(v.id)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 rounded-full shrink-0"
+                                  title="Delete Version"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             // Confirm Revert View
