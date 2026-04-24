@@ -60,6 +60,7 @@ import { buildSearchIndex } from '../lib/biodificationParser';
 import { Block } from '../lib/search.worker';
 import Omnibar from './Omnibar';
 
+
 const GOOGLE_FONTS = [
   'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Source Sans Pro',
   'Merriweather', 'Playfair Display', 'Lora', 'PT Serif',
@@ -67,337 +68,6 @@ const GOOGLE_FONTS = [
   'Oswald', 'Raleway', 'Poppins', 'Nunito', 'Ubuntu',
   'Dancing Script', 'Pacifico', 'Caveat', 'Satisfy'
 ];
-
-const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: any, saveStatus: 'saved' | 'saving' | 'error', layoutMode: 'horizontal' | 'vertical', setLayoutMode: (m: 'horizontal' | 'vertical') => void }) => {
-  if (!editor) return null;
-
-  const currentFont = editor.getAttributes('textStyle').fontFamily || 'Font';
-
-  return (
-    <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/50 rounded-t-[2rem]">
-      {/* Lateral pages toggle removed as requested */}
-
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        disabled={!editor.can().chain().focus().toggleBold().run()}
-        className={editor.isActive('bold') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Bold className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        disabled={!editor.can().chain().focus().toggleItalic().run()}
-        className={editor.isActive('italic') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Italic className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-        disabled={!editor.can().chain().focus().toggleStrike().run()}
-        className={editor.isActive('strike') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Strikethrough className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-        disabled={!editor.can().chain().focus().toggleUnderline().run()}
-        className={editor.isActive('underline') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <UnderlineIcon className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleSubscript().run()}
-        disabled={!editor.can().chain().focus().toggleSubscript().run()}
-        className={editor.isActive('subscript') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <SubscriptIcon className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleSuperscript().run()}
-        disabled={!editor.can().chain().focus().toggleSuperscript().run()}
-        className={editor.isActive('superscript') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <SuperscriptIcon className="h-4 w-4" />
-      </Button>
-      
-      <div className="w-px h-4 bg-border mx-1" />
-      
-      <div className="flex items-center gap-1">
-        <input
-          type="color"
-          onInput={event => editor.chain().focus().setColor((event.target as HTMLInputElement).value).run()}
-          value={editor.getAttributes('textStyle').color || '#000000'}
-          className="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent"
-          title="Text Color"
-        />
-        <input
-          type="color"
-          onInput={event => editor.chain().focus().toggleHighlight({ color: (event.target as HTMLInputElement).value }).run()}
-          value={editor.getAttributes('highlight').color || '#ffff00'}
-          className="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent"
-          title="Highlight Color"
-        />
-      </div>
-
-      <div className="w-px h-4 bg-border mx-1" />
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
-            <span className="text-xs font-medium mr-1 truncate max-w-[90px]" style={{ fontFamily: currentFont !== 'Font' ? currentFont : 'inherit' }}>
-              {currentFont.replace(/['"]/g, '')}
-            </span>
-            <ChevronDown className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48 max-h-[300px] overflow-y-auto">
-          {GOOGLE_FONTS.map(font => (
-            <DropdownMenuItem 
-              key={font} 
-              onClick={() => editor.chain().focus().setFontFamily(font).run()}
-              style={{ fontFamily: font }}
-            >
-              {font}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontFamily().run()}>Default</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
-            <span className="text-xs font-medium mr-1">Size</span>
-            <ChevronDown className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-32">
-          {['12px', '14px', '16px', '18px', '20px', '24px', '30px'].map(size => (
-            <DropdownMenuItem key={size} onClick={() => editor.chain().focus().setFontSize(size).run()}>
-              {size}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontSize().run()}>Default</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
-            <Settings2 className="h-4 w-4 mr-1" />
-            <ChevronDown className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
-          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Line Height</div>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('1').run()}>Single</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('1.5').run()}>1.5 Lines</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('2').run()}>Double</DropdownMenuItem>
-          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Text Indent</div>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setTextIndent('0').run()}>None</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setTextIndent('1rem').run()}>Small</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setTextIndent('2rem').run()}>Large</DropdownMenuItem>
-          <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Letter Spacing</div>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setLetterSpacing('normal').run()}>Normal</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setLetterSpacing('0.05em').run()}>Wide</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().setLetterSpacing('0.1em').run()}>Extra Wide</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="w-px h-4 bg-border mx-1" />
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
-            <Heading1 className="h-4 w-4 mr-1" />
-            <ChevronDown className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          {[1, 2, 3, 4, 5, 6].map((level: any) => (
-            <DropdownMenuItem 
-              key={level}
-              onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
-              className={editor.isActive('heading', { level }) ? 'bg-muted' : ''}
-            >
-              Heading {level}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      
-      <div className="w-px h-4 bg-border mx-1" />
-
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        className={editor.isActive({ textAlign: 'left' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <AlignLeft className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        className={editor.isActive({ textAlign: 'center' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <AlignCenter className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        className={editor.isActive({ textAlign: 'right' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <AlignRight className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-        className={editor.isActive({ textAlign: 'justify' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <AlignJustify className="h-4 w-4" />
-      </Button>
-
-      <div className="w-px h-4 bg-border mx-1" />
-
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={editor.isActive('bulletList') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <List className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={editor.isActive('orderedList') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <ListOrdered className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={editor.isActive('blockquote') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <Quote className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleTaskList().run()}
-        className={editor.isActive('taskList') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-      >
-        <CheckSquare className="h-4 w-4" />
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" title="Table Controls">
-            <TableIcon className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Insert Table</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} disabled={!editor.can().addColumnBefore()}>Add Column Before</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>Add Column After</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()}>Delete Column</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>Add Row Before</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>Add Row After</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()}>Delete Row</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().mergeCells().run()} disabled={!editor.can().mergeCells()}>Merge Cells</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().splitCell().run()} disabled={!editor.can().splitCell()}>Split Cell</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()} disabled={!editor.can().deleteTable()} className="text-destructive">Delete Table</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="w-px h-4 bg-border mx-1" />
-
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().toggleDropCap().run()}
-        className={editor.isActive('paragraph', { dropCap: true }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
-        title="Toggle Drop Cap"
-      >
-        <Type className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().setPageBreak().run()}
-        className="text-muted-foreground hover:text-foreground"
-        title="Insert Page Break"
-      >
-        <Scissors className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onClick={() => editor.chain().focus().setSceneBreak().run()}
-        className="text-muted-foreground hover:text-foreground"
-        title="Insert Scene Break (***)"
-      >
-        <Minus className="h-4 w-4" />
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
-            <MessageSquareWarning className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()}>Info Callout</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'success' }).run()}>Success Callout</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()}>Warning Callout</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'error' }).run()}>Error Callout</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <InsertMediaDialog editor={editor} />
-      
-      <div className="flex-1" />
-      <div className="flex items-center gap-2 pr-2">
-        <PublishingDirector editor={editor} bookPlan={settings.bookPlan} />
-        <WritingAgentsMenu editor={editor} bookPlan={settings.bookPlan} />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10">
-              Quick Agents
-              <ChevronDown className="ml-2 h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select Agent</div>
-            <div className="flex flex-col gap-1 p-1">
-              <QuickIdeasDialog contextText={editor.getText()} />
-              <ResearchDialog contextText={editor.getText()} />
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <GenerateImageDialog onImageGenerated={(url) => {
-          editor?.chain().focus().setImage({ src: url, align: 'center', size: 'full' }).run();
-        }} />
-      </div>
-    </div>
-  );
-};
 
 export default function Canvas({ projectId, userId }: { projectId: string, userId: string }) {
   const [layoutMode, setLayoutMode] = useState<'horizontal' | 'vertical'>('vertical');
@@ -655,6 +325,335 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   });
 
   const [runningHeader, setRunningHeader] = useState('');
+  
+  const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode, settings }: { editor: any, saveStatus: 'saved' | 'saving' | 'error', layoutMode: 'horizontal' | 'vertical', setLayoutMode: (m: 'horizontal' | 'vertical') => void, settings: any }) => {
+    if (!editor) return null;
+
+    const currentFont = editor.getAttributes('textStyle').fontFamily || 'Font';
+
+    return (
+      <div className="flex flex-wrap items-center gap-1 p-2 border-b border-border bg-muted/50 rounded-t-[2rem]">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          disabled={!editor.can().chain().focus().toggleBold().run()}
+          className={editor.isActive('bold') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <Bold className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          disabled={!editor.can().chain().focus().toggleItalic().run()}
+          className={editor.isActive('italic') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <Italic className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          disabled={!editor.can().chain().focus().toggleStrike().run()}
+          className={editor.isActive('strike') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <Strikethrough className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          disabled={!editor.can().chain().focus().toggleUnderline().run()}
+          className={editor.isActive('underline') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <UnderlineIcon className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleSubscript().run()}
+          disabled={!editor.can().chain().focus().toggleSubscript().run()}
+          className={editor.isActive('subscript') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <SubscriptIcon className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleSuperscript().run()}
+          disabled={!editor.can().chain().focus().toggleSuperscript().run()}
+          className={editor.isActive('superscript') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <SuperscriptIcon className="h-4 w-4" />
+        </Button>
+        
+        <div className="w-px h-4 bg-border mx-1" />
+        
+        <div className="flex items-center gap-1">
+          <input
+            type="color"
+            onInput={event => editor.chain().focus().setColor((event.target as HTMLInputElement).value).run()}
+            value={editor.getAttributes('textStyle').color || '#000000'}
+            className="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent"
+            title="Text Color"
+          />
+          <input
+            type="color"
+            onInput={event => editor.chain().focus().toggleHighlight({ color: (event.target as HTMLInputElement).value }).run()}
+            value={editor.getAttributes('highlight').color || '#ffff00'}
+            className="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent"
+            title="Highlight Color"
+          />
+        </div>
+
+        <div className="w-px h-4 bg-border mx-1" />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+              <span className="text-xs font-medium mr-1 truncate max-w-[90px]" style={{ fontFamily: currentFont !== 'Font' ? currentFont : 'inherit' }}>
+                {currentFont.replace(/['"]/g, '')}
+              </span>
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48 max-h-[300px] overflow-y-auto">
+            {GOOGLE_FONTS.map(font => (
+              <DropdownMenuItem 
+                key={font} 
+                onClick={() => editor.chain().focus().setFontFamily(font).run()}
+                style={{ fontFamily: font }}
+              >
+                {font}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontFamily().run()}>Default</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+              <span className="text-xs font-medium mr-1">Size</span>
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-32">
+            {['12px', '14px', '16px', '18px', '20px', '24px', '30px'].map(size => (
+              <DropdownMenuItem key={size} onClick={() => editor.chain().focus().setFontSize(size).run()}>
+                {size}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem onClick={() => editor.chain().focus().unsetFontSize().run()}>Default</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+              <Settings2 className="h-4 w-4 mr-1" />
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48">
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Line Height</div>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('1').run()}>Single</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('1.5').run()}>1.5 Lines</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('2').run()}>Double</DropdownMenuItem>
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Text Indent</div>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setTextIndent('0').run()}>None</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setTextIndent('1rem').run()}>Small</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setTextIndent('2rem').run()}>Large</DropdownMenuItem>
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Letter Spacing</div>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setLetterSpacing('normal').run()}>Normal</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setLetterSpacing('0.05em').run()}>Wide</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().setLetterSpacing('0.1em').run()}>Extra Wide</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="w-px h-4 bg-border mx-1" />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+              <Heading1 className="h-4 w-4 mr-1" />
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {[1, 2, 3, 4, 5, 6].map((level: any) => (
+              <DropdownMenuItem 
+                key={level}
+                onClick={() => editor.chain().focus().toggleHeading({ level }).run()}
+                className={editor.isActive('heading', { level }) ? 'bg-muted' : ''}
+              >
+                Heading {level}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        <div className="w-px h-4 bg-border mx-1" />
+
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          className={editor.isActive({ textAlign: 'left' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <AlignLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          className={editor.isActive({ textAlign: 'center' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <AlignCenter className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          className={editor.isActive({ textAlign: 'right' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <AlignRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+          className={editor.isActive({ textAlign: 'justify' }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <AlignJustify className="h-4 w-4" />
+        </Button>
+
+        <div className="w-px h-4 bg-border mx-1" />
+
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={editor.isActive('bulletList') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <List className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={editor.isActive('orderedList') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <ListOrdered className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          className={editor.isActive('blockquote') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <Quote className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleTaskList().run()}
+          className={editor.isActive('taskList') ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+        >
+          <CheckSquare className="h-4 w-4" />
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" title="Table Controls">
+              <TableIcon className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Insert Table</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} disabled={!editor.can().addColumnBefore()}>Add Column Before</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.can().addColumnAfter()}>Add Column After</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.can().deleteColumn()}>Delete Column</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.can().addRowBefore()}>Add Row Before</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.can().addRowAfter()}>Add Row After</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.can().deleteRow()}>Delete Row</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().mergeCells().run()} disabled={!editor.can().mergeCells()}>Merge Cells</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().splitCell().run()} disabled={!editor.can().splitCell()}>Split Cell</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()} disabled={!editor.can().deleteTable()} className="text-destructive">Delete Table</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="w-px h-4 bg-border mx-1" />
+
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().toggleDropCap().run()}
+          className={editor.isActive('paragraph', { dropCap: true }) ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}
+          title="Toggle Drop Cap"
+        >
+          <Type className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().setPageBreak().run()}
+          className="text-muted-foreground hover:text-foreground"
+          title="Insert Page Break"
+        >
+          <Scissors className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => editor.chain().focus().setSceneBreak().run()}
+          className="text-muted-foreground hover:text-foreground"
+          title="Insert Scene Break (***)"
+        >
+          <Minus className="h-4 w-4" />
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
+              <MessageSquareWarning className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()}>Info Callout</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'success' }).run()}>Success Callout</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'warning' }).run()}>Warning Callout</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'error' }).run()}>Error Callout</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <InsertMediaDialog editor={editor} />
+        
+        <div className="flex-1" />
+        <div className="flex items-center gap-2 pr-2">
+          <PublishingDirector editor={editor} bookPlan={settings.bookPlan} />
+          <WritingAgentsMenu editor={editor} bookPlan={settings.bookPlan} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10">
+                Quick Agents
+                <ChevronDown className="ml-2 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select Agent</div>
+              <div className="flex flex-col gap-1 p-1">
+                <QuickIdeasDialog contextText={editor.getText()} />
+                <ResearchDialog contextText={editor.getText()} />
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <GenerateImageDialog onImageGenerated={(url) => {
+            editor?.chain().focus().setImage({ src: url, align: 'center', size: 'full' }).run();
+          }} />
+        </div>
+      </div>
+    );
+  };
 
   useEffect(() => {
     if (!editor) return;
@@ -768,7 +767,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         `}
       </style>
       <div className="print:hidden">
-        <MenuBar editor={editor} saveStatus={saveStatus} layoutMode={layoutMode} setLayoutMode={setLayoutMode} />
+        <MenuBar editor={editor} saveStatus={saveStatus} layoutMode={layoutMode} setLayoutMode={setLayoutMode} settings={settings} />
         <InlineAIChat editor={editor} />
         <ImageFormatMenu editor={editor} />
         
