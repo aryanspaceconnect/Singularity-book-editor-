@@ -15,7 +15,7 @@ import { useAI } from '../lib/ai-context';
 import { Editor } from '@tiptap/react';
 import { Shield01Icon as ShieldCheck, BookOpen01Icon as BookOpenCheck, MagicWand02Icon as Wand2, Task01Icon as FileText, Loading02Icon as Loader2, Alert01Icon as AlertTriangle, TickDouble01Icon as CheckCircle2 } from 'hugeicons-react';
 
-export default function PublishingDirector({ editor }: { editor: Editor }) {
+export default function PublishingDirector({ editor, bookPlan }: { editor: Editor, bookPlan?: any }) {
   const { ai } = useAI();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -28,6 +28,8 @@ export default function PublishingDirector({ editor }: { editor: Editor }) {
   
   // State for Validation
   const [validationReport, setValidationReport] = useState<any>(null);
+
+  const planContext = bookPlan ? `\n\nCurrent Book Skeleton (For context):\n${JSON.stringify(bookPlan, null, 2)}\n` : '';
 
   const handleTypeset = async () => {
     if (!editor) return;
@@ -42,7 +44,7 @@ export default function PublishingDirector({ editor }: { editor: Editor }) {
 2. Add appropriate chapter headings (<h1>, <h2>).
 3. Fix any weird spacing or alignment issues.
 4. Apply <em> for emphasis where appropriate.
-5. Do not change the actual words or story, ONLY the formatting.
+5. Do not change the actual words or story, ONLY the formatting.${planContext}
 
 Text:
 ${currentText}
@@ -72,7 +74,7 @@ Return ONLY the HTML formatted text. Do not include markdown blocks like \`\`\`h
       const currentText = editor.getText();
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
-        contents: `Act as an expert author. Based on the following intent, write the next section of the book.
+        contents: `Act as an expert author. Based on the following intent, write the next section of the book.${planContext}
         
 Intent: ${intentPrompt}
 
@@ -142,7 +144,7 @@ Do not include markdown blocks, just the raw JSON.`,
       const text = editor.getText();
       const response = await ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
-        contents: `Analyze the following book manuscript as a developmental editor. Check for:
+        contents: `Analyze the following book manuscript as a developmental editor.${planContext} Check for:
 1. Plot holes or unresolved threads.
 2. Character consistency (actions matching established traits).
 3. Pacing issues.
@@ -183,10 +185,12 @@ Do not include markdown blocks, just the raw JSON.`,
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
           <Wand2 className="h-4 w-4" />
           Director Mode
-        </Button>} />
+        </Button>
+      </DialogTrigger>
       <DialogContent className="sm:max-w-[800px] max-h-[85vh] flex flex-col bg-background border-border text-foreground">
         <DialogHeader>
           <DialogTitle>Publishing Director</DialogTitle>

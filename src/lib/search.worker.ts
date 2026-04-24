@@ -1,6 +1,3 @@
-import initSqlJs from 'sql.js';
-import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
-
 export interface Block {
   id: string;
   type: string;
@@ -11,77 +8,94 @@ export interface Block {
   pos?: number;
 }
 
-let db: any = null;
-let isInitializing = false;
-let initPromise: Promise<void> | null = null;
+// In-memory Elasticsearch-like architecture
+const blocksMap = new Map<string, Block>();
+const invertedIndex = new Map<string, { docId: string; tf: number }[]>();
+const docLengths = new Map<string, number>();
+let averageDocLength = 0;
+let totalDocs = 0;
 
-async function getDB() {
-  if (db) return db;
-  if (!initPromise) {
-    initPromise = (async () => {
-      try {
-        const SQL = await initSqlJs({
-          locateFile: file => sqlWasmUrl
-        });
-        db = new SQL.Database();
-        // Create table in WebAssembly Memory
-        db.run(`
-          CREATE TABLE blocks (
-            id TEXT PRIMARY KEY,
-            type TEXT,
-            content TEXT,
-            chapterName TEXT,
-            chapterNumber INTEGER,
-            hierarchyPath TEXT,
-            pos INTEGER
-          );
-        `);
-      } catch (err) {
-        console.error("Failed to initialize WASM SQLite", err);
-      }
-    })();
+const STOP_WORDS = new Set(['the', 'is', 'at', 'which', 'on', 'in', 'and', 'a', 'to', 'of', 'for', 'it', 'with', 'as']);
+
+function tokenize(text: string): string[] {
+  if (!text) return [];
+  // Lowercase, remove non-alphanumeric, split by whitespace
+  const words = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/);
+  return words.filter(w => w.length > 1 && !STOP_WORDS.has(w));
+}
+
+function calculateBM25Score(docId: string, tokens: string[]): number {
+  const k1 = 1.2;
+  const b = 0.75;
+  const docLen = docLengths.get(docId) || 0;
+  
+  let score = 0;
+  for (const token of tokens) {
+    const postings = invertedIndex.get(token);
+    if (!postings) continue;
+    
+    // Calculate IDF
+    const df = postings.length;
+    const idf = Math.log(1 + (totalDocs - df + 0.5) / (df + 0.5));
+    
+    // Find TF in this doc
+    const posting = postings.find(p => p.docId === docId);
+    const tf = posting ? posting.tf : 0;
+    
+    if (tf > 0) {
+      const termScore = (tf * (k1 + 1)) / (tf + k1 * (1 - b + b * (docLen / averageDocLength)));
+      score += idf * termScore;
+    }
   }
-  await initPromise;
-  return db;
+  return score;
 }
 
 self.onmessage = async (e) => {
   if (!e.data) return;
   const { action, payload, queryId } = e.data;
   
-  const database = await getDB();
-  if (!database) {
-     self.postMessage({ action: 'SEARCH_RESULTS', queryId, results: [], error: 'WASM engine failed to load' });
-     return;
-  }
-
   switch (action) {
     case 'INDEX':
       try {
-        database.run('BEGIN TRANSACTION;');
-        database.run('DELETE FROM blocks;');
-        
-        const stmt = database.prepare(`
-          INSERT INTO blocks (id, type, content, chapterName, chapterNumber, hierarchyPath, pos)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `);
+        // Clear existing index
+        blocksMap.clear();
+        invertedIndex.clear();
+        docLengths.clear();
+        totalDocs = 0;
+        let totalLen = 0;
 
-        for (const block of payload.blocks) {
-          stmt.run([
-            block.id || '',
-            block.type || '',
-            block.content || '',
-            block.chapterName || '',
-            block.chapterNumber || 0,
-            JSON.stringify(block.hierarchyPath || []),
-            block.pos || 0
-          ]);
+        const blocks: Block[] = payload.blocks || [];
+        totalDocs = blocks.length;
+
+        for (const block of blocks) {
+          blocksMap.set(block.id, block);
+          
+          // Combine searchable text fields
+          const searchableText = `${block.content || ''} ${block.chapterName || ''} ${block.type || ''}`;
+          const tokens = tokenize(searchableText);
+          
+          docLengths.set(block.id, tokens.length);
+          totalLen += tokens.length;
+          
+          // Count term frequencies
+          const termFreqs = new Map<string, number>();
+          for (const token of tokens) {
+            termFreqs.set(token, (termFreqs.get(token) || 0) + 1);
+          }
+          
+          // Add to inverted index
+          for (const [term, tf] of termFreqs.entries()) {
+            if (!invertedIndex.has(term)) {
+              invertedIndex.set(term, []);
+            }
+            invertedIndex.get(term)!.push({ docId: block.id, tf });
+          }
         }
-        stmt.free();
-        database.run('COMMIT;');
-        self.postMessage({ action: 'INDEX_COMPLETE', status: 'success', blockCount: payload.blocks.length });
+        
+        averageDocLength = totalDocs > 0 ? totalLen / totalDocs : 0;
+        
+        self.postMessage({ action: 'INDEX_COMPLETE', status: 'success', blockCount: totalDocs });
       } catch (err) {
-        database.run('ROLLBACK;');
         self.postMessage({ action: 'INDEX_ERROR', status: 'error', error: String(err) });
       }
       break;
@@ -92,68 +106,53 @@ self.onmessage = async (e) => {
         return;
       }
       
-      const q = "%" + payload.query.toLowerCase().trim() + "%";
-      const results: Block[] = [];
-      
       try {
-        const stmt = database.prepare(`
-          SELECT * FROM blocks 
-          WHERE LOWER(content) LIKE ? 
-          OR LOWER(chapterName) LIKE ?
-          OR type LIKE ?
-          ORDER BY pos ASC
-          LIMIT 30
-        `);
+        const queryTokens = tokenize(payload.query);
+        const docScores = new Map<string, number>();
         
-        let numericQuery = parseInt(payload.query.trim(), 10);
-        if (isNaN(numericQuery)) numericQuery = -1;
-
-        // Optionally, check if they typed "chapter <num>"
-        const isChapterMatch = payload.query.toLowerCase().includes('chapter');
-
-        // Execute fast WASM matrix search
-        stmt.bind([q, q, q]);
-
-        while (stmt.step()) {
-          const row = stmt.getAsObject();
-          results.push({
-            id: row.id,
-            type: row.type,
-            content: row.content,
-            chapterName: row.chapterName,
-            chapterNumber: row.chapterNumber,
-            hierarchyPath: JSON.parse(row.hierarchyPath || '[]'),
-            pos: row.pos
-          });
-        }
-        stmt.free();
-
-        // If numeric was found, also throw in exactly matching chapter block ids manually
-        if (numericQuery !== -1 || isChapterMatch) {
-            const chStmt = database.prepare('SELECT * FROM blocks WHERE chapterNumber = ? LIMIT 5');
-            chStmt.bind([numericQuery !== -1 ? numericQuery : 9999]); // If chapter matches text but no num, fallback.
-            while (chStmt.step()) {
-               const row = chStmt.getAsObject();
-               if (!results.find(r => r.id === row.id)) {
-                 results.push({
-                    id: row.id,
-                    type: row.type,
-                    content: row.content,
-                    chapterName: row.chapterName,
-                    chapterNumber: row.chapterNumber,
-                    hierarchyPath: JSON.parse(row.hierarchyPath || '[]'),
-                    pos: row.pos
-                 });
-               }
+        // Find docs containing at least one query token
+        const matchDocs = new Set<string>();
+        for (const token of queryTokens) {
+          // exact term match
+          const exactPostings = invertedIndex.get(token) || [];
+          exactPostings.forEach(p => matchDocs.add(p.docId));
+          
+          // prefix matching (fuzziness approximation)
+          for (const term of invertedIndex.keys()) {
+            if (term.startsWith(token) && term !== token) {
+              const prefixPostings = invertedIndex.get(term) || [];
+              prefixPostings.forEach(p => matchDocs.add(p.docId));
             }
-            chStmt.free();
+          }
         }
+        
+        // Calculate scores
+        for (const docId of matchDocs) {
+           docScores.set(docId, calculateBM25Score(docId, queryTokens));
+        }
+        
+        // Filter and sort results
+        const minScoreThreshold = 0.1; // Only return relevant results
+        const results = Array.from(docScores.entries())
+          .filter(([_, score]) => score > minScoreThreshold)
+          .sort((a, b) => b[1] - a[1]) // Descending score
+          .slice(0, 30) // top 30 hits
+          .map(([docId, _]) => blocksMap.get(docId));
+          
+        // Tie-breaker by pos
+        results.sort((a, b) => {
+            const scoreDiff = docScores.get(b!.id)! - docScores.get(a!.id)!;
+            if (Math.abs(scoreDiff) < 0.1) {
+                return (a!.pos || 0) - (b!.pos || 0);
+            }
+            return scoreDiff;
+        });
 
+        self.postMessage({ action: 'SEARCH_RESULTS', queryId, results: results });
       } catch (e) {
-        console.error("WASM SQLite Search Error", e);
+        console.error("Local Search Error", e);
+        self.postMessage({ action: 'SEARCH_RESULTS', queryId, results: [] });
       }
-
-      self.postMessage({ action: 'SEARCH_RESULTS', queryId, results });
       break;
   }
 };

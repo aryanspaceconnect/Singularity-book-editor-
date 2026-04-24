@@ -1,13 +1,5 @@
 import { Block } from './search.worker';
 
-// Parses TipTap (Prosemirror) Document into searchable blocks (Biodification Process)
-export function parseDocumentToBlocks(docMap: any[]): Block[] {
-  // We expect an already mapped array of node info because Prosemirror node objects
-  // can't be easily serialized to a web worker if they contain complex prototypes.
-  // The mapping happens in the main thread.
-  return []; // Replaced by logic below
-}
-
 export function buildSearchIndex(editor: any): Block[] {
   const blocks: Block[] = [];
   let currentChapterNumber = 0;

@@ -5,7 +5,8 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  // Set the limit higher for large document indexing
+  app.use(express.json({ limit: "50mb" }));
 
   // API routes FIRST
   app.get("/api/health", (req, res) => {

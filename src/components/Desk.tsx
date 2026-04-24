@@ -18,6 +18,9 @@ import BookWizardDialog from './BookWizardDialog';
 import SteppingStonesTray from './SteppingStonesTray';
 import { MagicWand01Icon } from 'hugeicons-react';
 
+import BookOutlineTray from './BookOutlineTray';
+import { ListTree } from 'lucide-react';
+
 export default function Desk({ userId, user, handleLogout }: { userId: string, user: any, handleLogout: () => void }) {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
@@ -29,6 +32,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
   
   const [wizardOpen, setWizardOpen] = useState(false);
   const [steppingStonesOpen, setSteppingStonesOpen] = useState(false);
+  const [isOutlineOpen, setIsOutlineOpen] = useState(true);
   
   // Navigation state
   const [view, setView] = useState<'dashboard' | 'editor'>('dashboard');
@@ -165,7 +169,8 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden p-0">
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden p-0">
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
@@ -173,7 +178,8 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                   )}
-                </Button>} />
+                </Button>
+              </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <GlobalSettingsDialog 
                   userId={user.uid} 
@@ -197,11 +203,11 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                 <p className="text-muted-foreground mt-1">Manage your books and agent engines.</p>
               </div>
               <DropdownMenu>
-                <DropdownMenuTrigger render={
+                <DropdownMenuTrigger asChild>
                   <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6">
                     <Plus className="mr-2 h-4 w-4" /> New Project
                   </Button>
-                } />
+                </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 rounded-2xl">
                   <DropdownMenuItem className="py-3 px-4 cursor-pointer" onClick={() => setWizardOpen(true)}>
                     <MagicWand01Icon className="mr-3 h-5 w-5 text-amber-500" />
@@ -335,6 +341,15 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
             <Button 
               variant="ghost" 
               size="sm" 
+              onClick={() => setIsOutlineOpen(!isOutlineOpen)}
+              className={`rounded-full ${isOutlineOpen ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <ListTree className="h-4 w-4 mr-2" />
+              Skeleton
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
               onClick={() => setSteppingStonesOpen(!steppingStonesOpen)}
               className={`rounded-full ${steppingStonesOpen ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             >
@@ -362,7 +377,8 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden ml-1 p-0">
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden ml-1 p-0">
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
@@ -370,7 +386,8 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                   )}
-                </Button>} />
+                </Button>
+              </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -408,6 +425,13 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
 
         <div className="flex flex-1 overflow-hidden print:overflow-visible print:h-auto p-4 print:p-0 gap-4">
           
+          {/* Book Outline Tray */}
+          {isOutlineOpen && (
+            <div className="print:hidden h-full rounded-[2rem] border border-border overflow-hidden shadow-xl transition-all duration-300 ease-in-out shrink-0">
+               <BookOutlineTray projectId={projectId} onClose={() => setIsOutlineOpen(false)} />
+            </div>
+          )}
+
           {/* Stepping Stones Tray */}
           {steppingStonesOpen && (
             <div className="print:hidden h-full rounded-[2rem] border border-border overflow-hidden shadow-xl transition-all duration-300 ease-in-out shrink-0">

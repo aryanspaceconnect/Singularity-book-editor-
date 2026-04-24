@@ -14,9 +14,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Wand2, AlignLeft, MessageSquare, ListTree, BookOpen, Loader2 } from 'lucide-react';
 import { Editor } from '@tiptap/react';
 
-export default function WritingAgentsMenu({ editor }: { editor: Editor }) {
+export default function WritingAgentsMenu({ editor, bookPlan }: { editor: Editor, bookPlan?: any }) {
   const { ai } = useAI();
   const [loadingAgent, setLoadingAgent] = useState<string | null>(null);
+
+  const planContext = bookPlan ? `\n\nCURRENT BOOK SKELETON:\n${JSON.stringify(bookPlan, null, 2)}\n` : '';
 
   const applyAgent = async (agentName: string, promptInstruction: string | string[], action: 'replace' | 'append' = 'replace') => {
     if (!editor) return;
@@ -61,7 +63,7 @@ export default function WritingAgentsMenu({ editor }: { editor: Editor }) {
         const currentPrompt = prompts[i];
         const response = await ai.models.generateContent({
           model: 'gemini-3.1-pro-preview',
-          contents: `${currentPrompt}\n\nHere is the text to process:\n\n${currentText}`,
+          contents: `${currentPrompt}${planContext}\n\nHere is the text to process:\n\n${currentText}`,
           config: {
             systemInstruction: "You are an expert writing and formatting assistant. You must return ONLY the processed text, formatted in HTML suitable for a rich text editor (using tags like <p>, <h1>, <h2>, <strong>, <em>, <ul>, <li>, etc. if appropriate). If the input contains HTML, preserve the structure unless instructed otherwise. Do NOT include markdown code blocks (like ```html). Do NOT include any conversational filler. Just the raw HTML output."
           }
@@ -259,12 +261,12 @@ export default function WritingAgentsMenu({ editor }: { editor: Editor }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={
+      <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
           <Wand2 className="h-4 w-4" />
           Writing Agents
         </Button>
-      } />
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuGroup>
           <DropdownMenuLabel>AI Assistants</DropdownMenuLabel>

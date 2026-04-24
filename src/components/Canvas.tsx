@@ -154,12 +154,14 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
       <div className="w-px h-4 bg-border mx-1" />
 
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
             <span className="text-xs font-medium mr-1 truncate max-w-[90px]" style={{ fontFamily: currentFont !== 'Font' ? currentFont : 'inherit' }}>
               {currentFont.replace(/['"]/g, '')}
             </span>
             <ChevronDown className="h-3 w-3" />
-          </Button>} />
+          </Button>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48 max-h-[300px] overflow-y-auto">
           {GOOGLE_FONTS.map(font => (
             <DropdownMenuItem 
@@ -175,10 +177,12 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
             <span className="text-xs font-medium mr-1">Size</span>
             <ChevronDown className="h-3 w-3" />
-          </Button>} />
+          </Button>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-32">
           {['12px', '14px', '16px', '18px', '20px', '24px', '30px'].map(size => (
             <DropdownMenuItem key={size} onClick={() => editor.chain().focus().setFontSize(size).run()}>
@@ -190,10 +194,12 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
       </DropdownMenu>
 
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
             <Settings2 className="h-4 w-4 mr-1" />
             <ChevronDown className="h-3 w-3" />
-          </Button>} />
+          </Button>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48">
           <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Line Height</div>
           <DropdownMenuItem onClick={() => editor.chain().focus().setLineHeight('1').run()}>Single</DropdownMenuItem>
@@ -213,10 +219,12 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
       <div className="w-px h-4 bg-border mx-1" />
 
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
             <Heading1 className="h-4 w-4 mr-1" />
             <ChevronDown className="h-3 w-3" />
-          </Button>} />
+          </Button>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           {[1, 2, 3, 4, 5, 6].map((level: any) => (
             <DropdownMenuItem 
@@ -300,9 +308,11 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
         <CheckSquare className="h-4 w-4" />
       </Button>
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" title="Table Controls">
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" title="Table Controls">
             <TableIcon className="h-4 w-4" />
-          </Button>} />
+          </Button>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Insert Table</DropdownMenuItem>
           <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} disabled={!editor.can().addColumnBefore()}>Add Column Before</DropdownMenuItem>
@@ -347,9 +357,11 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
         <Minus className="h-4 w-4" />
       </Button>
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
             <MessageSquareWarning className="h-4 w-4" />
-          </Button>} />
+          </Button>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()}>Info Callout</DropdownMenuItem>
           <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'success' }).run()}>Success Callout</DropdownMenuItem>
@@ -362,13 +374,15 @@ const MenuBar = ({ editor, saveStatus, layoutMode, setLayoutMode }: { editor: an
       
       <div className="flex-1" />
       <div className="flex items-center gap-2 pr-2">
-        <PublishingDirector editor={editor} />
-        <WritingAgentsMenu editor={editor} />
+        <PublishingDirector editor={editor} bookPlan={settings.bookPlan} />
+        <WritingAgentsMenu editor={editor} bookPlan={settings.bookPlan} />
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10">
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10">
               Quick Agents
               <ChevronDown className="ml-2 h-3 w-3" />
-            </Button>} />
+            </Button>
+          </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select Agent</div>
             <div className="flex flex-col gap-1 p-1">
@@ -391,6 +405,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { ai } = useAI();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   
   // Biodification Search System
   const searchWorkerRef = useRef<Worker | null>(null);
@@ -650,16 +665,22 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         if (data.runningHeader !== undefined) {
           setRunningHeader(data.runningHeader);
         }
-        if (data.content) {
-          if (data.content.trim().startsWith('<')) {
+        
+        const contentToLoad = data.previewContent || data.content;
+        const _isPreview = !!data.previewContent;
+        setIsPreviewMode(_isPreview);
+        editor.setEditable(!_isPreview, false); // Make readonly if previewing
+
+        if (contentToLoad) {
+          if (contentToLoad.trim().startsWith('<')) {
             // It's HTML
-            if (editor.getHTML() !== data.content && !editor.isFocused) {
-              editor.commands.setContent(data.content, { emitUpdate: false });
+            if (editor.getHTML() !== contentToLoad && !editor.isFocused) {
+              editor.commands.setContent(contentToLoad, { emitUpdate: false });
             }
           } else {
             // It's JSON
             try {
-              const parsed = JSON.parse(data.content);
+              const parsed = JSON.parse(contentToLoad);
               const currentContent = editor.getJSON();
               if (JSON.stringify(currentContent) !== JSON.stringify(parsed) && !editor.isFocused) {
                 editor.commands.setContent(parsed, { emitUpdate: false }); 
@@ -777,8 +798,17 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
             <ContextMenuTrigger 
               ref={scrollContainerRef} 
               onScroll={handleScroll}
-              className={`flex-1 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible print:h-auto ${layoutMode === 'horizontal' ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto overflow-x-hidden'}`}
+              className={`flex-1 relative bg-muted/20 print:p-0 print:bg-white print:overflow-visible print:h-auto ${layoutMode === 'horizontal' ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto overflow-x-hidden'} ${isPreviewMode ? 'ring-inset ring-4 ring-amber-500/50 bg-amber-500/5' : ''}`}
             >
+            
+            {isPreviewMode && (
+              <div className="sticky top-4 z-50 pointer-events-none flex justify-center w-full">
+                <div className="bg-amber-500 text-white px-5 py-2.5 rounded-full font-bold text-sm shadow-2xl flex items-center gap-3 border-2 border-amber-400">
+                  <div className="w-2.5 h-2.5 rounded-full bg-white animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
+                  Previewing Actions (Confirm or Reject via Sidekick)
+                </div>
+              </div>
+            )}
             
             {/* Pagination Container */}
             {layoutMode === 'horizontal' ? (

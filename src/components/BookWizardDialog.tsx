@@ -8,7 +8,7 @@ import { addDoc, collection } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAI } from '../lib/ai-context';
 
-export interface OutlineItem {
+interface OutlineItem {
   id: string;
   type: 'volume' | 'part' | 'chapter' | 'episode' | 'scene';
   title: string;
