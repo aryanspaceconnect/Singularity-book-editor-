@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import { GoogleGenAI } from '@google/genai';
+import { UniversalAI } from './UniversalAI';
+import { AI_MODELS } from '../services/aiModels';
 
 interface AIContextType {
-  ai: GoogleGenAI;
+  ai: UniversalAI;
   universalApiKey: string | null;
   observerApiKey: string | null;
 }
@@ -13,15 +14,20 @@ const AIContext = createContext<AIContextType | null>(null);
 
 export function AIProvider({ children, userId, projectId }: { children: React.ReactNode, userId: string, projectId: string | null }) {
   const [universalApiKey, setUniversalApiKey] = useState<string | null>(null);
+  const [universalModel, setUniversalModel] = useState<string | null>(null);
   const [observerApiKey, setObserverApiKey] = useState<string | null>(null);
+  const [observerModel, setObserverModel] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     const unsubscribe = onSnapshot(doc(db, 'users', userId), (docSnap) => {
-      if (docSnap.exists() && docSnap.data().universalApiKey) {
-        setUniversalApiKey(docSnap.data().universalApiKey);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUniversalApiKey(data.universalApiKey || null);
+        setUniversalModel(data.universalModel || null);
       } else {
         setUniversalApiKey(null);
+        setUniversalModel(null);
       }
     });
     return () => unsubscribe();
@@ -30,20 +36,25 @@ export function AIProvider({ children, userId, projectId }: { children: React.Re
   useEffect(() => {
     if (!projectId) {
       setObserverApiKey(null);
+      setObserverModel(null);
       return;
     }
     const unsubscribe = onSnapshot(doc(db, 'projects', projectId), (docSnap) => {
-      if (docSnap.exists() && docSnap.data().observerApiKey) {
-        setObserverApiKey(docSnap.data().observerApiKey);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setObserverApiKey(data.observerApiKey || null);
+        setObserverModel(data.observerModel || null);
       } else {
         setObserverApiKey(null);
+        setObserverModel(null);
       }
     });
     return () => unsubscribe();
   }, [projectId]);
 
   const activeApiKey = observerApiKey || universalApiKey || process.env.GEMINI_API_KEY;
-  const ai = new GoogleGenAI({ apiKey: activeApiKey });
+  const activeModel = observerModel || universalModel || AI_MODELS[0].id;
+  const ai = new UniversalAI(activeApiKey, activeModel);
 
   return (
     <AIContext.Provider value={{ ai, universalApiKey, observerApiKey }}>
@@ -56,7 +67,7 @@ export function useAI() {
   const context = useContext(AIContext);
   if (!context) {
     // Fallback if used outside provider
-    return { ai: new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }), universalApiKey: null, observerApiKey: null };
+    return { ai: new UniversalAI(process.env.GEMINI_API_KEY, AI_MODELS[0].id), universalApiKey: null, observerApiKey: null };
   }
   return context;
 }

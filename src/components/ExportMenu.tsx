@@ -198,10 +198,12 @@ export default function ExportMenu({ projectTitle, projectSettings, htmlContent 
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="sm" disabled={isExporting} className="rounded-full hidden sm:flex">
+      <DropdownMenuTrigger asChild={true} nativeButton={true}>
+        <Button variant="outline" size="sm" disabled={isExporting} className="rounded-full hidden sm:flex">
           {isExporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
           {isExporting ? "Exporting..." : "Export"}
-        </Button>} />
+        </Button>
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem onClick={handleExportHTML}>
           <Code className="mr-2 h-4 w-4 text-orange-500" />

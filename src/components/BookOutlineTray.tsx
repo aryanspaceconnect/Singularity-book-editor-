@@ -33,8 +33,8 @@ export default function BookOutlineTray({ projectId, onClose }: { projectId: str
   }, [bookPlan]);
 
   return (
-    <div className="flex flex-col h-full w-80 bg-background/50 backdrop-blur-sm border-r border-border">
-      <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+    <div className="flex flex-col h-full w-80 bg-background/50 backdrop-blur-sm border-r border-border overflow-hidden">
+      <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30 shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <ListOrdered className="w-4 h-4 text-primary" />
@@ -49,7 +49,7 @@ export default function BookOutlineTray({ projectId, onClose }: { projectId: str
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 p-3">
+      <div className="flex-1 overflow-y-auto">
         {!bookPlan || flatNodes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center px-4 space-y-3">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
@@ -59,12 +59,12 @@ export default function BookOutlineTray({ projectId, onClose }: { projectId: str
             <p className="text-xs text-muted-foreground opacity-80">Ask your Sidekick to propose a book skeleton.</p>
           </div>
         ) : (
-          <div className="space-y-1 mt-2 pb-10">
+          <div className="space-y-1 p-3 pb-10">
             {flatNodes.map(node => (
               <div 
                 key={node.id} 
                 className={`flex items-start gap-2.5 px-3 py-2.5 text-sm rounded-lg transition-colors border ${node.id === activeNodeId ? 'bg-primary/5 border-primary/30 shadow-[0_2px_10px_-4px_rgba(var(--primary),0.2)]' : 'border-transparent hover:bg-muted/50 cursor-pointer'}`}
-                style={{ marginLeft: `${node.level * 12}px` }}
+                style={{ marginLeft: `${node.level * 24}px` }}
               >
                 <div className="mt-0.5 shrink-0">
                   {node.status === 'completed' ? (
@@ -79,11 +79,11 @@ export default function BookOutlineTray({ projectId, onClose }: { projectId: str
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                   <div className={`font-medium truncate ${node.status === 'completed' ? 'text-muted-foreground line-through opacity-70' : node.id === activeNodeId ? 'text-foreground' : 'text-foreground/80'}`}>
+                   <div className={`font-medium truncate ${node.level === 0 ? 'text-sm font-bold text-foreground' : 'text-xs text-muted-foreground'} ${node.status === 'completed' ? 'line-through opacity-70' : node.id === activeNodeId ? 'text-foreground' : ''}`}>
                      {node.title}
                    </div>
                    {node.description && (
-                     <div className="text-[10px] text-muted-foreground mt-1 leading-relaxed opacity-80 line-clamp-2">
+                     <div className="text-[10px] text-muted-foreground mt-1 leading-relaxed opacity-70 line-clamp-2">
                        {node.description}
                      </div>
                    )}
@@ -92,7 +92,7 @@ export default function BookOutlineTray({ projectId, onClose }: { projectId: str
             ))}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }

@@ -169,7 +169,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild nativeButton={true}>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden p-0">
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
@@ -377,7 +377,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild nativeButton={true}>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden ml-1 p-0">
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="h-full w-full object-cover" referrerPolicy="no-referrer" />

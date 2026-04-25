@@ -9,6 +9,8 @@ import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { verifyApiKey } from '../services/aiService';
+import { AI_MODELS } from '../services/aiModels';
 
 export type PageSize = {
   id: string;
@@ -37,6 +39,7 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
     description: '',
     contributors: [], // Now an array of contributor objects
     observerApiKey: '',
+    observerModel: '',
     pageSizeId: 'a4',
     customWidth: 210,
     customHeight: 297,
@@ -50,6 +53,18 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
 
   const [newContributorId, setNewContributorId] = useState('');
   const [newContributorRole, setNewContributorRole] = useState('Editor');
+
+  const [verifying, setVerifying] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<'success' | 'failure' | null>(null);
+
+  const handleVerify = async () => {
+    if (!settings.observerApiKey) return;
+    setVerifying(true);
+    setVerificationResult(null);
+    const isValid = await verifyApiKey(settings.observerApiKey, settings.observerModel || AI_MODELS[0].id);
+    setVerificationResult(isValid ? 'success' : 'failure');
+    setVerifying(false);
+  };
 
   useEffect(() => {
     if (open && projectId) {
@@ -196,17 +211,44 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
               />
             </div>
             <div className="grid gap-2">
+              <Label htmlFor="observerModel">AI Model</Label>
+              <Select value={settings.observerModel || AI_MODELS[0].id} onValueChange={(val) => { updateSetting('observerModel', val); setVerificationResult(null); }}>
+                <SelectTrigger className="bg-muted/50 border-border">
+                  <SelectValue placeholder="Select Model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {AI_MODELS.map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="observerApiKey" className="flex items-center gap-2">
-                <Key className="h-4 w-4" /> Sidekick API Key
+                <Key className="h-4 w-4" /> Project API Key (Site Key)
               </Label>
               <Input
                 id="observerApiKey"
                 type="password"
                 placeholder="Leave blank to use Universal API Key"
                 value={settings.observerApiKey}
-                onChange={(e) => updateSetting('observerApiKey', e.target.value)}
+                onChange={(e) => {
+                  updateSetting('observerApiKey', e.target.value);
+                  setVerificationResult(null);
+                }}
                 className="bg-muted/50 border-border"
               />
+              <div className="flex gap-2 mt-1">
+                <Button onClick={handleVerify} disabled={verifying || !settings.observerApiKey} variant="secondary" className="text-xs py-1 h-7">
+                  {verifying ? "Verifying..." : "Verify Key"}
+                </Button>
+                {verificationResult === 'success' && <span className="text-xs text-green-500 self-center">Valid</span>}
+                {verificationResult === 'failure' && <span className="text-xs text-destructive self-center">Invalid</span>}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                If provided, this API key and model will be used exclusively for this specific project and any agents it contains.
+                If empty, the Universal Global API Key will be used.
+              </p>
             </div>
           </TabsContent>
 

@@ -4,21 +4,37 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Settings } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
+import { verifyApiKey } from '../services/aiService';
+import { AI_MODELS } from '../services/aiModels';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function GlobalSettingsDialog({ userId, trigger }: { userId: string, trigger?: React.ReactElement }) {
   const [open, setOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [modelId, setModelId] = useState(AI_MODELS[0].id);
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<'success' | 'failure' | null>(null);
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    setVerificationResult(null);
+    const isValid = await verifyApiKey(apiKey, modelId);
+    setVerificationResult(isValid ? 'success' : 'failure');
+    setVerifying(false);
+  };
 
   useEffect(() => {
     if (open) {
       const fetchSettings = async () => {
         const docRef = doc(db, 'users', userId);
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().universalApiKey) {
-          setApiKey(docSnap.data().universalApiKey);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.universalApiKey) setApiKey(data.universalApiKey);
+          if (data.universalModel) setModelId(data.universalModel);
         }
       };
       fetchSettings();
@@ -29,7 +45,13 @@ export default function GlobalSettingsDialog({ userId, trigger }: { userId: stri
     setLoading(true);
     try {
       const docRef = doc(db, 'users', userId);
-      await setDoc(docRef, { universalApiKey: apiKey }, { merge: true });
+      const updateData: any = { universalModel: modelId };
+      if (apiKey.trim() === '') {
+        updateData.universalApiKey = deleteField();
+      } else {
+        updateData.universalApiKey = apiKey;
+      }
+      await setDoc(docRef, updateData, { merge: true });
       setOpen(false);
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -41,11 +63,13 @@ export default function GlobalSettingsDialog({ userId, trigger }: { userId: stri
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger ? (
-        <DialogTrigger render={trigger} />
+        <DialogTrigger asChild={true}>{trigger}</DialogTrigger>
       ) : (
-        <DialogTrigger render={<Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+        <DialogTrigger asChild={true}>
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
             <Settings className="h-5 w-5" />
-          </Button>} />
+          </Button>
+        </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-[425px] bg-background border-border">
         <DialogHeader>
@@ -56,17 +80,40 @@ export default function GlobalSettingsDialog({ userId, trigger }: { userId: stri
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="apiKey" className="text-foreground">Universal API Key (Gemini)</Label>
+            <Label htmlFor="model" className="text-foreground">AI Model</Label>
+            <Select value={modelId} onValueChange={(val) => { setModelId(val); setVerificationResult(null); }}>
+              <SelectTrigger className="bg-muted/50 border-border">
+                <SelectValue placeholder="Select Model" />
+              </SelectTrigger>
+              <SelectContent>
+                {AI_MODELS.map(m => (
+                  <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="apiKey" className="text-foreground">Universal API Key</Label>
             <Input
               id="apiKey"
               type="password"
               placeholder="Leave blank to use system default"
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                setVerificationResult(null);
+              }}
               className="bg-muted/50 border-border text-foreground"
             />
+            <div className="flex gap-2">
+              <Button onClick={handleVerify} disabled={verifying || !apiKey} variant="secondary" className="text-xs">
+                {verifying ? "Verifying..." : "Verify Key"}
+              </Button>
+              {verificationResult === 'success' && <span className="text-xs text-green-500 self-center">Valid</span>}
+              {verificationResult === 'failure' && <span className="text-xs text-destructive self-center">Invalid</span>}
+            </div>
             <p className="text-xs text-muted-foreground">
-              This key will be used by default for all AI interactions if provided.
+              This model and key will be used by default if provided.
             </p>
           </div>
         </div>
