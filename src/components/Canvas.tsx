@@ -410,13 +410,11 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         <div className="w-px h-4 bg-border mx-1" />
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+          <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2" />}>
               <span className="text-xs font-medium mr-1 truncate max-w-[90px]" style={{ fontFamily: currentFont !== 'Font' ? currentFont : 'inherit' }}>
                 {currentFont.replace(/['"]/g, '')}
               </span>
               <ChevronDown className="h-3 w-3" />
-            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-48 max-h-[300px] overflow-y-auto">
             {GOOGLE_FONTS.map(font => (
@@ -433,11 +431,9 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+          <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2" />}>
               <span className="text-xs font-medium mr-1">Size</span>
               <ChevronDown className="h-3 w-3" />
-            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-32">
             {['12px', '14px', '16px', '18px', '20px', '24px', '30px'].map(size => (
@@ -450,11 +446,9 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+          <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2" />}>
               <Settings2 className="h-4 w-4 mr-1" />
               <ChevronDown className="h-3 w-3" />
-            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-48">
             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Line Height</div>
@@ -475,11 +469,9 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         <div className="w-px h-4 bg-border mx-1" />
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2">
+          <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground px-2" />}>
               <Heading1 className="h-4 w-4 mr-1" />
               <ChevronDown className="h-3 w-3" />
-            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             {[1, 2, 3, 4, 5, 6].map((level: any) => (
@@ -564,10 +556,8 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
           <CheckSquare className="h-4 w-4" />
         </Button>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" title="Table Controls">
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" title="Table Controls" />}>
               <TableIcon className="h-4 w-4" />
-            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Insert Table</DropdownMenuItem>
@@ -613,10 +603,8 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
           <Minus className="h-4 w-4" />
         </Button>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" />}>
               <MessageSquareWarning className="h-4 w-4" />
-            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             <DropdownMenuItem onClick={() => editor.chain().focus().toggleCallout({ type: 'info' }).run()}>Info Callout</DropdownMenuItem>
@@ -633,11 +621,9 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
           <PublishingDirector editor={editor} bookPlan={settings.bookPlan} />
           <WritingAgentsMenu editor={editor} bookPlan={settings.bookPlan} />
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10">
+            <DropdownMenuTrigger render={<Button variant="outline" size="sm" className="rounded-full border-primary/20 bg-primary/5 text-primary hover:bg-primary/10" />}>
                 Quick Agents
                 <ChevronDown className="ml-2 h-3 w-3" />
-              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Select Agent</div>

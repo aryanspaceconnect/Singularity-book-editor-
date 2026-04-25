@@ -185,11 +185,9 @@ Do not include markdown blocks, just the raw JSON.`,
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+      <DialogTrigger render={<Button variant="outline" size="sm" className="gap-2 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20" />}>
           <Wand2 className="h-4 w-4" />
           Director Mode
-        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[800px] max-h-[85vh] flex flex-col bg-background border-border text-foreground">
         <DialogHeader>

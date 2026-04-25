@@ -66,13 +66,36 @@ class OpenRouterModel {
   constructor(private apiKey: string, private modelId: string) {}
 
   async generateContent(config: any) {
-    const prompt = typeof config.contents === 'string' ? config.contents : config.contents?.[0]?.parts?.[0]?.text || config.contents || "";
+    let messages: any[] = [];
+    if (config.systemInstruction) {
+       messages.push({ role: 'system', content: config.systemInstruction });
+    }
     
-    // Some visual helpers pass image inline data. 
-    // We'll just pass text for now to the proxy.
+    if (Array.isArray(config.contents)) {
+      config.contents.forEach((c: any) => {
+        let text = '';
+        if (c.parts && Array.isArray(c.parts)) {
+          text = c.parts.map((p:any) => p.text).join('');
+        } else if (typeof c.parts === 'string') {
+          text = c.parts;
+        } else if (typeof c === 'string') {
+          text = c;
+        } else {
+          text = JSON.stringify(c);
+        }
+        messages.push({
+          role: c.role === 'model' ? 'assistant' : (c.role === 'user' ? 'user' : 'user'),
+          content: text
+        });
+      });
+    } else {
+      const prompt = typeof config.contents === 'string' ? config.contents : config.contents?.[0]?.parts?.[0]?.text || config.contents || "";
+      messages.push({ role: 'user', content: prompt });
+    }
+    
     const body: any = {
       model: this.modelId,
-      messages: [{ role: 'user', content: prompt }]
+      messages: messages
     };
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -80,14 +103,15 @@ class OpenRouterModel {
       headers: {
         "Authorization": `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": window.location.href, // Recommended for OpenRouter
+        "HTTP-Referer": typeof window !== 'undefined' ? window.location.href : "https://ai.studio.app",
         "X-Title": "AI Studio Book App"
       },
       body: JSON.stringify(body)
     });
 
     if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
@@ -103,10 +127,13 @@ class OpenRouterChatSession {
   private systemInstruction: string = '';
 
   constructor(private apiKey: string, private modelId: string, private config: any) {
-    if (config.systemInstruction) {
+    if (config.config && config.config.systemInstruction) {
+      this.systemInstruction = config.config.systemInstruction;
+    } else if (config.systemInstruction) {
       this.systemInstruction = config.systemInstruction;
     }
-    if (config.history) {
+    
+    if (config.history && Array.isArray(config.history)) {
       // Map Gemini history to OpenRouter history
       this.history = config.history.map((h: any) => {
         let content = '';
@@ -115,8 +142,12 @@ class OpenRouterChatSession {
         } else if (typeof h.parts === 'string') {
           content = h.parts;
         }
+        let r = h.role === 'model' ? 'assistant' : 'user';
+        if (h.role !== 'model' && h.role !== 'user' && h.role !== 'assistant') {
+           r = 'user'; // fallback
+        }
         return {
-          role: h.role === 'model' ? 'assistant' : 'user',
+          role: r,
           content: content
         };
       });
@@ -124,19 +155,19 @@ class OpenRouterChatSession {
   }
 
   async sendMessage(params: any) {
-    const userMessage = params.message;
+    const userMessage = typeof params === 'string' ? params : params.message;
     // userMessage could be a string, or an array of functionResponses
     let content = '';
     
     if (typeof userMessage === 'string') {
       content = userMessage;
-    } else if (Array.isArray(userMessage)) {
+    } else if (Array.isArray(userMessage) || Array.isArray(params)) {
       // We are simulating a response to a function call.
       // OpenRouter / OpenAI typically expects role: 'tool'
       // But for simplicity in this proxy, we might just stringify it
-      content = JSON.stringify(userMessage);
+      content = JSON.stringify(userMessage || params);
     } else {
-      content = JSON.stringify(userMessage);
+      content = typeof userMessage !== 'undefined' ? JSON.stringify(userMessage) : JSON.stringify(params);
     }
 
     const messages = [];
@@ -146,28 +177,33 @@ class OpenRouterChatSession {
     messages.push(...this.history);
     messages.push({ role: 'user', content });
 
+    // final sanity check
+    const cleanMessages = messages.map(m => {
+       if (m.role === 'model') return { ...m, role: 'assistant' };
+       return m;
+    });
+
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": window.location.href,
+        "HTTP-Referer": typeof window !== 'undefined' ? window.location.href : "https://ai.studio.app",
         "X-Title": "AI Studio Book App"
       },
       body: JSON.stringify({
         model: this.modelId,
-        messages: messages
+        messages: cleanMessages
       })
     });
 
     if (!response.ok) {
-      throw new Error(`OpenRouter API error: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
     const assistantMessage = data.choices?.[0]?.message?.content || "";
-
-    // Append to history
     this.history.push({ role: 'user', content });
     this.history.push({ role: 'assistant', content: assistantMessage });
 

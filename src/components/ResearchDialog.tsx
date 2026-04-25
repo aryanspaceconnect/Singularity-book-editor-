@@ -65,11 +65,9 @@ ${contextText.substring(0, 5000)}`,
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild={true}>
-        <div className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-muted rounded-sm">
+      <DialogTrigger render={<div className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-muted rounded-sm" />}>
           <Globe className="h-4 w-4 text-primary" />
           Research Agent
-        </div>
       </DialogTrigger>
       <DialogContent className="bg-background border-border text-foreground sm:max-w-[600px]">
         <DialogHeader>

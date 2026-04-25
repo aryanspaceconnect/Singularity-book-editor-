@@ -169,8 +169,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild nativeButton={true}>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden p-0">
+              <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden p-0" />}>
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
@@ -178,7 +177,6 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                   )}
-                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <GlobalSettingsDialog 
@@ -203,10 +201,8 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                 <p className="text-muted-foreground mt-1">Manage your books and agent engines.</p>
               </div>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6">
-                    <Plus className="mr-2 h-4 w-4" /> New Project
-                  </Button>
+                <DropdownMenuTrigger render={<Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6" />}>
+                  <Plus className="mr-2 h-4 w-4" /> New Project
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 rounded-2xl">
                   <DropdownMenuItem className="py-3 px-4 cursor-pointer" onClick={() => setWizardOpen(true)}>
@@ -255,8 +251,8 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                       {proj.description && (
                         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{proj.description}</p>
                       )}
-                      {proj.contributors && (
-                        <p className="text-xs text-muted-foreground mt-2">By: {proj.contributors}</p>
+                      {proj.contributors && proj.contributors.length > 0 && (
+                        <p className="text-xs text-muted-foreground mt-2">By: {Array.isArray(proj.contributors) ? proj.contributors.map((c: any) => c.id || c).join(', ') : proj.contributors}</p>
                       )}
                       <p className="text-xs text-muted-foreground mt-2">Last updated: {new Date(proj.updatedAt).toLocaleDateString()}</p>
                     </div>
@@ -377,8 +373,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild nativeButton={true}>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden ml-1 p-0">
+              <DropdownMenuTrigger render={<Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden ml-1 p-0" />}>
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Avatar" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                   ) : (
@@ -386,29 +381,30 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                   )}
-                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <ProjectSettingsDialog 
-                  projectId={projectId} 
-                  trigger={
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Project Settings
-                    </DropdownMenuItem>
-                  } 
-                />
-                <GlobalSettingsDialog 
-                  userId={user.uid} 
-                  trigger={
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                      <SlidersHorizontal className="mr-2 h-4 w-4" />
-                      Global Settings
-                    </DropdownMenuItem>
-                  } 
-                />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <ProjectSettingsDialog 
+                    projectId={projectId} 
+                    trigger={
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Project Settings
+                      </DropdownMenuItem>
+                    } 
+                  />
+                  <GlobalSettingsDialog 
+                    userId={user.uid} 
+                    trigger={
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                        <SlidersHorizontal className="mr-2 h-4 w-4" />
+                        Global Settings
+                      </DropdownMenuItem>
+                    } 
+                  />
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
             <div className="h-4 w-px bg-border mx-1" />

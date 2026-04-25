@@ -63,12 +63,10 @@ export default function GlobalSettingsDialog({ userId, trigger }: { userId: stri
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger ? (
-        <DialogTrigger asChild={true}>{trigger}</DialogTrigger>
+        <DialogTrigger render={trigger} />
       ) : (
-        <DialogTrigger asChild={true}>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+        <DialogTrigger render={<Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground" />}>
             <Settings className="h-5 w-5" />
-          </Button>
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-[425px] bg-background border-border">

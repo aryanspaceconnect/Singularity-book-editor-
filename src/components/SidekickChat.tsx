@@ -7,7 +7,7 @@ import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, s
 import { db } from '../firebase';
 import Markdown from 'react-markdown';
 import { useAI } from '../lib/ai-context';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuGroup } from '@/components/ui/dropdown-menu';
 
 const updateCanvasFunctionDeclaration: FunctionDeclaration = {
   name: "updateCanvasContent",
@@ -484,45 +484,47 @@ NOTE REGARDING MODIFICATIONS: tools like 'updateCanvasContent', 'appendToCanvas'
                   <span className="hidden sm:inline">Book Plan</span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80 max-h-[60vh] overflow-y-auto rounded-xl border border-primary/20 shadow-lg p-2">
-                <DropdownMenuLabel className="font-bold text-sm mb-2 flex items-center gap-2">
-                  <span className="bg-primary/10 flex h-6 w-6 items-center justify-center rounded-md">
-                    <ListTodo className="h-4 w-4 text-primary" />
-                  </span>
-                  Master Book Plan
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-primary/10" />
-                <div className="space-y-1 mt-2">
-                  {flatNodes.map(node => (
-                    <div 
-                      key={node.id} 
-                      className={`flex items-start gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors border ${node.id === activeNodeId ? 'bg-primary/5 border-primary/30 shadow-sm' : 'border-transparent hover:bg-muted'}`}
-                      style={{ paddingLeft: `${Math.max(12, node.level * 16 + 12)}px` }}
-                    >
-                      <div className="mt-0.5 shrink-0">
-                        {node.status === 'completed' ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        ) : node.id === activeNodeId ? (
-                          <div className="relative">
-                            <Circle className="h-4 w-4 text-primary animate-pulse" />
-                            <ArrowRight className="h-2.5 w-2.5 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                          </div>
-                        ) : (
-                          <Circle className="h-4 w-4 text-muted-foreground opacity-40" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                         <div className={`font-medium truncate ${node.status === 'completed' ? 'text-muted-foreground line-through' : node.id === activeNodeId ? 'text-primary' : 'text-foreground'}`}>
-                           {node.title}
-                         </div>
-                         {node.description && (
-                           <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight opacity-80">
-                             {node.description}
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="font-bold text-sm mb-2 flex items-center gap-2">
+                    <span className="bg-primary/10 flex h-6 w-6 items-center justify-center rounded-md">
+                      <ListTodo className="h-4 w-4 text-primary" />
+                    </span>
+                    Master Book Plan
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-primary/10" />
+                  <div className="space-y-1 mt-2">
+                    {flatNodes.map(node => (
+                      <div 
+                        key={node.id} 
+                        className={`flex items-start gap-2.5 px-3 py-2 text-sm rounded-lg transition-colors border ${node.id === activeNodeId ? 'bg-primary/5 border-primary/30 shadow-sm' : 'border-transparent hover:bg-muted'}`}
+                        style={{ paddingLeft: `${Math.max(12, node.level * 16 + 12)}px` }}
+                      >
+                        <div className="mt-0.5 shrink-0">
+                          {node.status === 'completed' ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          ) : node.id === activeNodeId ? (
+                            <div className="relative">
+                              <Circle className="h-4 w-4 text-primary animate-pulse" />
+                              <ArrowRight className="h-2.5 w-2.5 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                            </div>
+                          ) : (
+                            <Circle className="h-4 w-4 text-muted-foreground opacity-40" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                           <div className={`font-medium truncate ${node.status === 'completed' ? 'text-muted-foreground line-through' : node.id === activeNodeId ? 'text-primary' : 'text-foreground'}`}>
+                             {node.title}
                            </div>
-                         )}
+                           {node.description && (
+                             <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight opacity-80">
+                               {node.description}
+                             </div>
+                           )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
