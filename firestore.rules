@@ -57,6 +57,10 @@ service cloud.firestore {
       match /files/{fileId} {
         allow read, write: if isProjectOwner(projectId);
       }
+      
+      match /blocks/{blockId} {
+        allow read, write: if isProjectOwner(projectId);
+      }
     }
   }
 }

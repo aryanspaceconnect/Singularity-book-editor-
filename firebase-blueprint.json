@@ -72,6 +72,19 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "type", "createdAt", "updatedAt"]
+    },
+    "Block": {
+      "title": "Block",
+      "description": "A blockified section of the document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "serialNumber": { "type": "string" },
+        "sub": { "type": "array", "items": { "type": "string" } },
+        "mic": { "type": "object", "additionalProperties": { "type": "string" } }
+      },
+      "required": ["id", "projectId", "serialNumber", "sub", "mic"]
     }
   },
   "firestore": {
@@ -102,6 +115,10 @@
     "/projects/{projectId}/canvas/{docId}": {
       "schema": { "$ref": "#/entities/Canvas" },
       "description": "Canvas documents for a project"
+    },
+    "/projects/{projectId}/blocks/{blockId}": {
+      "schema": { "$ref": "#/entities/Block" },
+      "description": "Indexed document blocks"
     }
   }
 }

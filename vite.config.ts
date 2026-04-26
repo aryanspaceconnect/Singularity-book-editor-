@@ -18,5 +18,8 @@ export default defineConfig(({mode}) => {
     server: {
       hmr: false,
     },
+    build: {
+      minify: false,
+    },
   };
 });

@@ -81,41 +81,6 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   const searchWorkerRef = useRef<Worker | null>(null);
   const [isOmnibarOpen, setIsOmnibarOpen] = useState(false);
 
-  useEffect(() => {
-    searchWorkerRef.current = new SearchWorker();
-
-    const handleCmdK = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setIsOmnibarOpen(prev => !prev);
-      }
-    };
-    
-    const handleOpenSearch = () => {
-      setIsOmnibarOpen(true);
-    };
-
-    window.addEventListener('keydown', handleCmdK);
-    window.addEventListener('open-search', handleOpenSearch);
-
-    return () => {
-      window.removeEventListener('keydown', handleCmdK);
-      window.removeEventListener('open-search', handleOpenSearch);
-      if (searchWorkerRef.current) {
-        searchWorkerRef.current.terminate();
-      }
-    };
-  }, []);
-
-  const handleOmnibarSelect = (block: Block) => {
-    setIsOmnibarOpen(false);
-    if (editor && block.pos !== undefined) {
-      editor.commands.setTextSelection(block.pos);
-      editor.commands.focus();
-      editor.commands.scrollIntoView();
-    }
-  };
-
   // Zoom handlers
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 2.5));
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.25));
@@ -323,6 +288,64 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
       }, 1000);
     },
   });
+
+  useEffect(() => {
+    searchWorkerRef.current = new SearchWorker();
+
+    const handleCmdK = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsOmnibarOpen(prev => !prev);
+      }
+    };
+    
+    const handleOpenSearch = () => {
+      setIsOmnibarOpen(true);
+    };
+
+    const handleHighlightText = (e: CustomEvent) => {
+      if (!editor || !e.detail.text) return;
+      const textToSearch = e.detail.text;
+      
+      // Basic approach: Try to find text position
+      // TipTap has no built-in "find", but we can search doc descendants
+      let foundPos = -1;
+      editor.state.doc.descendants((node, pos) => {
+        if (node.isText && node.text && node.text.includes(textToSearch)) {
+          foundPos = pos;
+        }
+      });
+      
+      if (foundPos !== -1) {
+        editor.commands.setTextSelection({ from: foundPos, to: foundPos + textToSearch.length });
+        editor.commands.focus();
+        editor.commands.scrollIntoView();
+        // Optional: you could temporary apply a highlight mark here
+      }
+    };
+
+    window.addEventListener('keydown', handleCmdK);
+    window.addEventListener('open-search', handleOpenSearch);
+    window.addEventListener('highlight-text', handleHighlightText as EventListener);
+
+    return () => {
+      window.removeEventListener('keydown', handleCmdK);
+      window.removeEventListener('open-search', handleOpenSearch);
+      window.removeEventListener('highlight-text', handleHighlightText as EventListener);
+      if (searchWorkerRef.current) {
+        searchWorkerRef.current.terminate();
+      }
+    };
+  }, [editor]);
+
+  const handleOmnibarSelect = (block: Block) => {
+    setIsOmnibarOpen(false);
+    if (editor && block.pos !== undefined) {
+      editor.commands.setTextSelection(block.pos);
+      editor.commands.focus();
+      editor.commands.scrollIntoView();
+    }
+  };
 
   const [runningHeader, setRunningHeader] = useState('');
   
