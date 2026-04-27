@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UniversalAI } from './UniversalAI';
-import { AI_MODELS } from '../services/aiModels';
+import { AI_MODELS, getProviderForModel } from '../services/aiModels';
 
 interface AIContextType {
   ai: UniversalAI;
@@ -52,8 +52,14 @@ export function AIProvider({ children, userId, projectId }: { children: React.Re
     return () => unsubscribe();
   }, [projectId]);
 
-  const activeApiKey = observerApiKey || universalApiKey || process.env.GEMINI_API_KEY;
   const activeModel = observerModel || universalModel || AI_MODELS[0].id;
+  
+  let fallbackKey = process.env.GEMINI_API_KEY;
+  if (getProviderForModel(activeModel) === 'openrouter') {
+     fallbackKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
+  }
+  
+  const activeApiKey = observerApiKey || universalApiKey || fallbackKey;
   const ai = new UniversalAI(activeApiKey, activeModel);
 
   return (
@@ -67,7 +73,12 @@ export function useAI() {
   const context = useContext(AIContext);
   if (!context) {
     // Fallback if used outside provider
-    return { ai: new UniversalAI(process.env.GEMINI_API_KEY, AI_MODELS[0].id), universalApiKey: null, observerApiKey: null };
+    const defaultModel = AI_MODELS[0].id;
+    let fallbackKey = process.env.GEMINI_API_KEY;
+    if (getProviderForModel(defaultModel) === 'openrouter') {
+       fallbackKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
+    }
+    return { ai: new UniversalAI(fallbackKey, defaultModel), universalApiKey: null, observerApiKey: null };
   }
   return context;
 }

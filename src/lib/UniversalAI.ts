@@ -67,8 +67,12 @@ class OpenRouterModel {
 
   async generateContent(config: any) {
     let messages: any[] = [];
-    if (config.systemInstruction) {
-       messages.push({ role: 'system', content: config.systemInstruction });
+    let sysInstruction = config.systemInstruction;
+    if (config.config && config.config.systemInstruction) {
+       sysInstruction = config.config.systemInstruction;
+    }
+    if (sysInstruction) {
+       messages.push({ role: 'system', content: sysInstruction });
     }
     
     if (Array.isArray(config.contents)) {
@@ -98,6 +102,22 @@ class OpenRouterModel {
       messages: messages
     };
 
+    let toolsConfig = config.tools;
+    if (config.config && config.config.tools) {
+      toolsConfig = config.config.tools;
+    }
+
+    if (toolsConfig && Array.isArray(toolsConfig)) {
+      const tools = mapToolsToOpenRouter(toolsConfig);
+      if (tools.length > 0) {
+        body.tools = tools;
+      }
+    }
+
+    if (!this.apiKey) {
+      throw new Error(`OpenRouter API key is missing. Please add OPENROUTER_API_KEY in the AI Studio Secrets panel.`);
+    }
+
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -115,22 +135,85 @@ class OpenRouterModel {
     }
 
     const data = await response.json();
+    const assistantMessage = data.choices?.[0]?.message;
+    
+    let functionCalls: any[] | undefined = undefined;
+    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+      functionCalls = assistantMessage.tool_calls.map((tc: any) => {
+         let args = {};
+         try { args = JSON.parse(tc.function.arguments); } catch(e){}
+         return {
+           name: tc.function.name,
+           args: args
+         }
+      });
+    }
+
     return {
-      text: data.choices?.[0]?.message?.content || "",
-      functionCalls: undefined
+      text: assistantMessage?.content || "",
+      functionCalls
     };
   }
+}
+
+function mapToolsToOpenRouter(geminiTools: any[]) {
+  const openRouterTools: any[] = [];
+  for (const group of geminiTools) {
+    if (group.functionDeclarations && Array.isArray(group.functionDeclarations)) {
+      for (const fn of group.functionDeclarations) {
+        // Deep copy parameters to modify case
+        const parameters = JSON.parse(JSON.stringify(fn.parameters || { type: "object", properties: {} }));
+        
+        // Fix Types to lower case which OpenRouter/JSON schema expects
+        const fixTypes = (obj: any) => {
+          if (obj && typeof obj === 'object') {
+            if (obj.type && typeof obj.type === 'string') {
+              obj.type = obj.type.toLowerCase();
+            }
+            if (obj.properties) {
+              for (const k in obj.properties) {
+                fixTypes(obj.properties[k]);
+              }
+            }
+            if (obj.items) {
+               fixTypes(obj.items);
+            }
+          }
+        };
+        fixTypes(parameters);
+
+        openRouterTools.push({
+          type: "function",
+          function: {
+            name: fn.name,
+            description: fn.description,
+            parameters: parameters
+          }
+        });
+      }
+    }
+  }
+  return openRouterTools;
 }
 
 class OpenRouterChatSession {
   private history: any[] = [];
   private systemInstruction: string = '';
-
+  private tools: any[] | undefined = undefined;
+  
   constructor(private apiKey: string, private modelId: string, private config: any) {
     if (config.config && config.config.systemInstruction) {
       this.systemInstruction = config.config.systemInstruction;
     } else if (config.systemInstruction) {
       this.systemInstruction = config.systemInstruction;
+    }
+
+    if (config.config && config.config.tools) {
+       const mappedTools = mapToolsToOpenRouter(config.config.tools);
+       if (mappedTools.length > 0) this.tools = mappedTools;
+    } else if (config.tools) {
+       const mappedTools = mapToolsToOpenRouter(config.tools);
+       if (mappedTools.length > 0) this.tools = mappedTools;
     }
     
     if (config.history && Array.isArray(config.history)) {
@@ -156,32 +239,61 @@ class OpenRouterChatSession {
 
   async sendMessage(params: any) {
     const userMessage = typeof params === 'string' ? params : params.message;
-    // userMessage could be a string, or an array of functionResponses
-    let content = '';
     
-    if (typeof userMessage === 'string') {
-      content = userMessage;
-    } else if (Array.isArray(userMessage) || Array.isArray(params)) {
-      // We are simulating a response to a function call.
-      // OpenRouter / OpenAI typically expects role: 'tool'
-      // But for simplicity in this proxy, we might just stringify it
-      content = JSON.stringify(userMessage || params);
-    } else {
-      content = typeof userMessage !== 'undefined' ? JSON.stringify(userMessage) : JSON.stringify(params);
-    }
-
     const messages = [];
     if (this.systemInstruction) {
       messages.push({ role: 'system', content: this.systemInstruction });
     }
     messages.push(...this.history);
-    messages.push({ role: 'user', content });
+
+    // If params is an array or object containing functionResponses
+    if (Array.isArray(userMessage) && userMessage.length > 0 && userMessage[0].functionResponse) {
+       // Gemini passes function responses, OpenRouter needs role: "tool"
+       for (const fnResp of userMessage) {
+           const { name, response } = fnResp.functionResponse;
+           let lastAssistantMsg = this.history[this.history.length - 1];
+           let toolCallId = "call_" + Math.random().toString(36).substring(7); // fallback
+           if (lastAssistantMsg && lastAssistantMsg.tool_calls) {
+              const matchedCall = lastAssistantMsg.tool_calls.find((tc: any) => tc.function.name === name);
+              if (matchedCall) toolCallId = matchedCall.id;
+           }
+           messages.push({
+             role: "tool",
+             tool_call_id: toolCallId,
+             name: name,
+             content: JSON.stringify(response)
+           });
+       }
+    } else {
+       // Normal user message
+       let content = '';
+       if (typeof userMessage === 'string') {
+         content = userMessage;
+       } else {
+         content = typeof userMessage !== 'undefined' ? JSON.stringify(userMessage) : JSON.stringify(params);
+       }
+       messages.push({ role: 'user', content });
+       this.history.push({ role: 'user', content });
+    }
 
     // final sanity check
     const cleanMessages = messages.map(m => {
        if (m.role === 'model') return { ...m, role: 'assistant' };
        return m;
     });
+
+    const body: any = {
+      model: this.modelId,
+      messages: cleanMessages
+    };
+
+    if (this.tools) {
+      body.tools = this.tools;
+    }
+
+    if (!this.apiKey) {
+      throw new Error(`OpenRouter API key is missing. Please add OPENROUTER_API_KEY in the AI Studio Secrets panel.`);
+    }
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -191,10 +303,7 @@ class OpenRouterChatSession {
         "HTTP-Referer": typeof window !== 'undefined' ? window.location.href : "https://ai.studio.app",
         "X-Title": "AI Studio Book App"
       },
-      body: JSON.stringify({
-        model: this.modelId,
-        messages: cleanMessages
-      })
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
@@ -203,10 +312,28 @@ class OpenRouterChatSession {
     }
 
     const data = await response.json();
-    const assistantMessage = data.choices?.[0]?.message?.content || "";
-    this.history.push({ role: 'user', content });
-    this.history.push({ role: 'assistant', content: assistantMessage });
+    const assistantMessage = data.choices?.[0]?.message;
+    
+    // Store in history
+    if (assistantMessage) {
+      this.history.push(assistantMessage);
+    }
 
-    return { text: assistantMessage, functionCalls: undefined };
+    let functionCalls: any[] | undefined = undefined;
+    if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
+      functionCalls = assistantMessage.tool_calls.map((tc: any) => {
+         let args = {};
+         try { args = JSON.parse(tc.function.arguments); } catch(e){}
+         return {
+           name: tc.function.name,
+           args: args
+         }
+      });
+    }
+
+    return {
+      text: assistantMessage?.content || "",
+      functionCalls
+    };
   }
 }
