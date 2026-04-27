@@ -54,6 +54,7 @@ import {
   ContextMenuSubTrigger,
 } from "@/components/ui/context-menu";
 import { ArrowDown01Icon as ChevronDown } from 'hugeicons-react';
+import { Image as ImageIcon } from 'lucide-react';
 import { useAI } from '../lib/ai-context';
 import SearchWorker from '../lib/search.worker?worker';
 import { buildSearchIndex } from '../lib/biodificationParser';
@@ -76,6 +77,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   const { ai } = useAI();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isMediaDialogOpen, setIsMediaDialogOpen] = useState(false);
   
   // Biodification Search System
   const searchWorkerRef = useRef<Worker | null>(null);
@@ -147,6 +149,43 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
   }, [layoutMode]);
+
+  const [wordData, setWordData] = useState<{ query: string, defs: string[], syns: string[], rhymes: string[] } | null>(null);
+
+  const handleContextMenuOpen = async (open: boolean) => {
+    if (!open) return;
+    setWordData(null);
+    if (!editor) return;
+    
+    // check selection
+    const { from, to, empty } = editor.state.selection;
+    if (empty) return;
+    const text = editor.state.doc.textBetween(from, to, '\n').trim();
+    if (text.split(/\s+/).length > 2 || text.length === 0) return; // Only 1 or 2 words
+    
+    // Fetch
+    try {
+      const [defRes, synRes, rhyRes] = await Promise.all([
+        fetch(`https://api.datamuse.com/words?sp=${encodeURIComponent(text)}&md=d&max=1`).then(r => r.json()),
+        fetch(`https://api.datamuse.com/words?rel_syn=${encodeURIComponent(text)}&max=5`).then(r => r.json()),
+        fetch(`https://api.datamuse.com/words?rel_rhy=${encodeURIComponent(text)}&max=5`).then(r => r.json())
+      ]);
+
+      setWordData({
+        query: text,
+        defs: defRes[0]?.defs || [],
+        syns: synRes.map((w: any) => w.word),
+        rhymes: rhyRes.map((w: any) => w.word)
+      });
+    } catch(e) {
+      console.error("Datamuse error", e);
+    }
+  };
+
+  const handleReplaceWord = (newWord: string) => {
+    if (!editor) return;
+    editor.chain().focus().insertContent(newWord).run();
+  };
 
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
@@ -324,14 +363,66 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
       }
     };
 
+    const handleAiSearchRequest = (e: any) => {
+      const { query, requestId } = e.detail;
+      if (searchWorkerRef.current) {
+         const queryId = parseInt(requestId);
+         const workerHandler = (we: MessageEvent) => {
+            if (we.data.action === 'SEARCH_RESULTS' && we.data.queryId === queryId) {
+                searchWorkerRef.current!.removeEventListener('message', workerHandler);
+                window.dispatchEvent(new CustomEvent('ai-search-response', { detail: { requestId, results: we.data.results } }));
+            }
+         };
+         searchWorkerRef.current.addEventListener('message', workerHandler);
+         searchWorkerRef.current.postMessage({ action: 'SEARCH', payload: { query }, queryId });
+      } else {
+         window.dispatchEvent(new CustomEvent('ai-search-response', { detail: { requestId, results: [] } }));
+      }
+    };
+
+    const handleAiSurgicalRequest = (e: any) => {
+      const { type, pos, newHtml, requestId } = e.detail;
+      if (!editor) {
+         window.dispatchEvent(new CustomEvent('ai-surgical-response', { detail: { requestId, html: '' } }));
+         return;
+      }
+      
+      const node = editor.state.doc.nodeAt(pos);
+      if (!node) {
+        window.dispatchEvent(new CustomEvent('ai-surgical-response', { detail: { requestId, html: editor.getHTML() } }));
+        return;
+      }
+
+      // Record current state to revert back after we get the HTML
+      const oldJSON = editor.getJSON();
+      const range = { from: pos, to: pos + node.nodeSize };
+      
+      if (type === 'delete') {
+         editor.commands.deleteRange(range);
+      } else if (type === 'replace') {
+         editor.chain().deleteRange(range).insertContentAt(range.from, newHtml).run();
+      }
+      
+      const modifiedHtml = editor.getHTML();
+      
+      // Revert without emitting update
+      editor.commands.setContent(oldJSON, { emitUpdate: false });
+      
+      window.dispatchEvent(new CustomEvent('ai-surgical-response', { detail: { requestId, html: modifiedHtml } }));
+    };
+
     window.addEventListener('keydown', handleCmdK);
     window.addEventListener('open-search', handleOpenSearch);
     window.addEventListener('highlight-text', handleHighlightText as EventListener);
+    window.addEventListener('ai-search-request', handleAiSearchRequest);
+    window.addEventListener('ai-surgical-request', handleAiSurgicalRequest);
 
     return () => {
       window.removeEventListener('keydown', handleCmdK);
       window.removeEventListener('open-search', handleOpenSearch);
       window.removeEventListener('highlight-text', handleHighlightText as EventListener);
+      window.removeEventListener('ai-search-request', handleAiSearchRequest);
+      window.removeEventListener('ai-surgical-request', handleAiSurgicalRequest);
       if (searchWorkerRef.current) {
         searchWorkerRef.current.terminate();
       }
@@ -637,7 +728,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <InsertMediaDialog editor={editor} />
+        <InsertMediaDialog editor={editor} open={isMediaDialogOpen} onOpenChange={setIsMediaDialogOpen} />
         
         <div className="flex-1" />
         <div className="flex items-center gap-2 pr-2">
@@ -802,7 +893,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
             <Ruler orientation="horizontal" zoom={zoom} scrollOffset={scrollX} pageMargin={settings.margins || 20} pageWidth={0} />
           </div>
 
-          <ContextMenu>
+          <ContextMenu onOpenChange={handleContextMenuOpen}>
             <ContextMenuTrigger 
               ref={scrollContainerRef} 
               onScroll={handleScroll}
@@ -963,6 +1054,43 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-64 z-50">
+          {wordData && (
+            <>
+              <div className="px-2 py-1.5 text-sm max-w-full">
+                <span className="font-semibold text-primary">{wordData.query}</span>
+                {wordData.defs[0] && (
+                  <p className="text-xs text-muted-foreground mt-1 mb-1 line-clamp-2" title={wordData.defs[0]}>{wordData.defs[0].split('\t').pop()}</p>
+                )}
+              </div>
+              
+              {wordData.syns.length > 0 && (
+                <ContextMenuSub>
+                  <ContextMenuSubTrigger>Synonyms</ContextMenuSubTrigger>
+                  <ContextMenuSubContent className="w-48">
+                    {wordData.syns.map(w => (
+                       <ContextMenuItem key={w} onClick={() => handleReplaceWord(w)}>{w}</ContextMenuItem>
+                    ))}
+                  </ContextMenuSubContent>
+                </ContextMenuSub>
+              )}
+              {wordData.rhymes.length > 0 && (
+                <ContextMenuSub>
+                  <ContextMenuSubTrigger>Rhymes</ContextMenuSubTrigger>
+                  <ContextMenuSubContent className="w-48">
+                    {wordData.rhymes.map(w => (
+                       <ContextMenuItem key={w} onClick={() => handleReplaceWord(w)}>{w}</ContextMenuItem>
+                    ))}
+                  </ContextMenuSubContent>
+                </ContextMenuSub>
+              )}
+              <ContextMenuSeparator />
+            </>
+          )}
+
+          <ContextMenuItem onClick={() => setIsMediaDialogOpen(true)}>
+            <ImageIcon className="h-4 w-4 mr-2" />
+            Insert Media / Image Search
+          </ContextMenuItem>
           <ContextMenuItem onClick={() => handleContextAI('Improve this text to be more engaging and flow better.', editor)} disabled={isProcessing}>
             <Sparkles className="h-4 w-4 mr-2" />
             {isProcessing ? 'AI is thinking...' : 'Improve Writing'}

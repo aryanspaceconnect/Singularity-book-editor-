@@ -124,6 +124,50 @@ const writeNodeContentFunctionDeclaration: FunctionDeclaration = {
   }
 };
 
+const queryBookIndexFunctionDeclaration: FunctionDeclaration = {
+  name: "queryBookIndex",
+  description: "Queries the AST index of the book using BM25 prefix matching targeting IDs or keywords to find specific text, concepts, or chapters. Always use this to find explicit context before answering specific questions.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      query: { type: Type.STRING, description: "Search query containing keywords." }
+    },
+    required: ["query"]
+  }
+};
+
+const getFormattingToolDirectoryFunctionDeclaration: FunctionDeclaration = {
+  name: "getFormattingToolDirectory",
+  description: "Fetch the directory of formatting tools, rules, and commands available for structuring the canvas (like making text bold, changing headings, etc.). Call this to understand how to format the document.",
+};
+
+const surgicalEditNodeFunctionDeclaration: FunctionDeclaration = {
+  name: "surgicalEditNode",
+  description: "Surgically edit or replace a specific block of text at an exact position (pos). First queryBookIndex to find the precise `pos`, then use this to replace it.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING, description: "A summary of the edit." },
+      pos: { type: Type.NUMBER, description: "The precise pos value from queryBookIndex." },
+      newHtmlContent: { type: Type.STRING, description: "The new HTML content to replace the node." }
+    },
+    required: ["actionSummary", "pos", "newHtmlContent"]
+  }
+};
+
+const surgicalDeleteNodeFunctionDeclaration: FunctionDeclaration = {
+  name: "surgicalDeleteNode",
+  description: "Surgically delete a specific block of text at an exact position (pos). First queryBookIndex to find the precise `pos`.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING, description: "A summary of what is deleted." },
+      pos: { type: Type.NUMBER, description: "The precise pos value from queryBookIndex." }
+    },
+    required: ["actionSummary", "pos"]
+  }
+};
+
 export default function SidekickChat({ projectId, userId, canvasText, canvasHtml }: { projectId: string, userId: string, canvasText: string, canvasHtml: string }) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
@@ -138,6 +182,35 @@ export default function SidekickChat({ projectId, userId, canvasText, canvasHtml
   useEffect(() => {
     setLocalApiKey(observerApiKey || '');
   }, [observerApiKey]);
+
+  const performSearch = (query: string): Promise<any[]> => {
+    return new Promise(resolve => {
+       const requestId = Date.now().toString();
+       const handler = (e: any) => {
+          if (e.detail.requestId === requestId) {
+             window.removeEventListener('ai-search-response', handler);
+             resolve(e.detail.results);
+          }
+       };
+       window.addEventListener('ai-search-response', handler);
+       window.dispatchEvent(new CustomEvent('ai-search-request', { detail: { query, requestId } }));
+    });
+  };
+
+  const performSurgicalPreview = (type: 'replace' | 'delete', pos: number, newHtml?: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const requestId = Date.now().toString();
+      const handler = (e: any) => {
+         if (e.detail.requestId === requestId) {
+            window.removeEventListener('ai-surgical-response', handler);
+            resolve(e.detail.html);
+         }
+      };
+      window.addEventListener('ai-surgical-response', handler);
+      window.dispatchEvent(new CustomEvent('ai-surgical-request', { detail: { type, pos, newHtml, requestId } }));
+      setTimeout(() => reject(new Error('Surgical preview timeout')), 5000);
+    });
+  };
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'projects', projectId), (docItem) => {
@@ -255,7 +328,7 @@ You must linearly and strictly follow the active node. Use the writeNodeContent 
         history: history,
         config: {
           thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
-          tools: [{ functionDeclarations: [updateCanvasFunctionDeclaration, appendToCanvasFunctionDeclaration, updateBookMetadataFunctionDeclaration, proposeBookPlanFunctionDeclaration, writeNodeContentFunctionDeclaration] }],
+          tools: [{ functionDeclarations: [updateCanvasFunctionDeclaration, appendToCanvasFunctionDeclaration, updateBookMetadataFunctionDeclaration, proposeBookPlanFunctionDeclaration, writeNodeContentFunctionDeclaration, queryBookIndexFunctionDeclaration, getFormattingToolDirectoryFunctionDeclaration, surgicalEditNodeFunctionDeclaration, surgicalDeleteNodeFunctionDeclaration] }],
           systemInstruction: `You are the Sidekick Model in the Singularity Book Studio. 
 You are the user's main orchestrator and AI agent for writing a book.
 Your process:
@@ -267,13 +340,16 @@ ${planStateContext}
 
 If the user asks to modify the existing book beyond the progression path, use the 'updateCanvasContent' or 'appendToCanvas' tools.
 If the user asks to change the book's metadata, use the 'updateBookMetadata' tool.
+If you need to answer specific questions about the existing written content, you MUST query the index using the 'queryBookIndex' tool. Do NOT guess details.
+If the user requests surgical precision edits (e.g. changing 1 specific paragraph), ALWAYS use 'queryBookIndex' to get the 'pos', then use 'surgicalEditNode' or 'surgicalDeleteNode'. Do not rewrite the whole chapter unless asked!
+If you need to know how to format content, use 'getFormattingToolDirectory'.
 
 CRITICAL WRITING CONSTRAINTS:
 - Write substantial content. Chapters must be fully fleshed out, avoid summaries.
 - Follow the exact tone & style implicitly requested or defined in the plan.
 - Use explicit visual cues when formatting data (headings, line breaks).
 
-NOTE REGARDING MODIFICATIONS: tools like 'updateCanvasContent', 'appendToCanvas', 'proposeBookPlan', and 'writeNodeContent' will propose the change. The user must confirm manually. Stop talking and await their response when returning a proposed state.`,
+NOTE REGARDING MODIFICATIONS: tools like 'updateCanvasContent', 'appendToCanvas', 'proposeBookPlan', 'surgicalEditNode', and 'writeNodeContent' will propose the change. The user must confirm manually. Stop talking and await their response when returning a proposed state.`,
         }
       });
 
@@ -351,6 +427,50 @@ NOTE REGARDING MODIFICATIONS: tools like 'updateCanvasContent', 'appendToCanvas'
                });
                await setDoc(doc(db, 'projects', projectId, 'canvas', 'main'), { previewContent: updatedHtml }, { merge: true });
                functionResponses.push({ functionResponse: { name: call.name, response: { status: "pending", message: "Proposed section content to user." } } });
+            }
+          } else if (call.name === 'queryBookIndex') {
+            const args = call.args as any;
+            if (args.query) {
+               try {
+                 const results = await performSearch(args.query);
+                 const formattedResults = results.map(r => `[ID: ${r.numberId} | Pos: ${r.pos}]\nChapter: ${r.chapterName || ''}\nType: ${r.type}\nContent: ${r.content}`).join('\n\n');
+                 functionResponses.push({ functionResponse: { name: call.name, response: { status: "success", text: formattedResults || "No matching results found." } } });
+               } catch (e) {
+                 functionResponses.push({ functionResponse: { name: call.name, response: { status: "error", message: "Search failed." } } });
+               }
+            }
+          } else if (call.name === 'getFormattingToolDirectory') {
+            const formattingRules = {
+              "headings": "Use <h1> for Book Title, <h2> for Chapter Titles, <h3> for sub-headings.",
+              "bold_italic": "Use <strong> for emphasis, <em> for thoughts or subtle emphasis.",
+              "scene_break": "Use <div class=\"scene-break\"></div> to insert a visual scene break between paragraphs.",
+              "callouts": "Use <div class=\"callout\" data-type=\"info|warning|success|error\">Your callout content here</div> for special boxed text.",
+              "tables": "Use standard <table>, <tr>, <th>, <td> HTML tags.",
+              "blockquotes": "Use <blockquote>This is a quote</blockquote>."
+            };
+            functionResponses.push({ functionResponse: { name: call.name, response: formattingRules } });
+          } else if (call.name === 'surgicalEditNode' || call.name === 'surgicalDeleteNode') {
+            const args = call.args as any;
+            const isDelete = call.name === 'surgicalDeleteNode';
+            if (args.pos !== undefined) {
+               try {
+                 const newHtml = await performSurgicalPreview(isDelete ? 'delete' : 'replace', args.pos, args.newHtmlContent);
+                 const actionSummary = args.actionSummary || (isDelete ? "Delete block" : "Edit block");
+                 await addDoc(messagesRef, {
+                   role: 'assistant',
+                   content: `I have prepared a surgical edit: **${actionSummary}**. Please review the preview in the canvas and confirm.`,
+                   proposal: {
+                     type: 'update', // Treat as regular update since HTML is fully resolved in SidekickChat
+                     html: newHtml,
+                     summary: actionSummary
+                   },
+                   createdAt: serverTimestamp()
+                 });
+                 await setDoc(doc(db, 'projects', projectId, 'canvas', 'main'), { previewContent: newHtml }, { merge: true });
+                 functionResponses.push({ functionResponse: { name: call.name, response: { status: "pending", message: "Proposed surgical change to user." } } });
+               } catch (e) {
+                 functionResponses.push({ functionResponse: { name: call.name, response: { status: "error", message: "Failed to generate surgical preview." } } });
+               }
             }
           }
         }

@@ -19,11 +19,12 @@ import SteppingStonesTray from './SteppingStonesTray';
 import { MagicWand01Icon } from 'hugeicons-react';
 
 import BookOutlineTray from './BookOutlineTray';
-import { ListTree } from 'lucide-react';
+import { ListTree, Feather } from 'lucide-react';
+import WritingToolsDialog from './WritingToolsDialog';
 
-import { blockifyDocument } from '../lib/blockifier';
 
-import SearchDialog from './SearchDialog';
+
+
 
 export default function Desk({ userId, user, handleLogout }: { userId: string, user: any, handleLogout: () => void }) {
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -55,20 +56,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFocusMode]);
 
-  // Blockification trigger every 5 minutes
-  useEffect(() => {
-    if (!projectId || !canvasText) return;
-    const interval = setInterval(async () => {
-      try {
-        console.log("Running automatic blockification...");
-        await blockifyDocument(canvasText, projectId);
-      } catch (err) {
-        console.error("Error running blockifier", err);
-      }
-    }, 5 * 60 * 1000); // 5 minutes
-    
-    return () => clearInterval(interval);
-  }, [projectId, canvasText]);
+
 
   useEffect(() => {
     const q = query(collection(db, 'projects'), where('ownerId', '==', userId));
@@ -315,7 +303,6 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
             setView('editor');
           }} 
         />
-        <SearchDialog projectId={projectId} />
       </div>
     );
   }
@@ -372,6 +359,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
               <BookOpen className="h-4 w-4 mr-2" />
               Vault
             </Button>
+            <WritingToolsDialog projectId={projectId} />
             <div className="h-4 w-px bg-border mx-1" />
             <Button 
               variant="ghost" 
@@ -440,7 +428,7 @@ export default function Desk({ userId, user, handleLogout }: { userId: string, u
         </header>
 
         <div className="flex flex-1 overflow-hidden print:overflow-visible print:h-auto p-4 print:p-0 gap-4">
-          <SearchDialog projectId={projectId} />
+
           
           {/* Book Outline Tray */}
           {isOutlineOpen && (

@@ -1,10 +1,13 @@
 export interface Block {
   id: string;
+  numberId?: string;
+  category?: 'major' | 'minor' | 'content';
   type: string;
   content: string;
   chapterName?: string;
   chapterNumber?: number;
   hierarchyPath?: string[];
+  metaFields?: string[];
   pos?: number;
 }
 
@@ -71,7 +74,8 @@ self.onmessage = async (e) => {
           blocksMap.set(block.id, block);
           
           // Combine searchable text fields
-          const searchableText = `${block.content || ''} ${block.chapterName || ''} ${block.type || ''}`;
+          const metaString = block.metaFields ? block.metaFields.join(' ') : '';
+          const searchableText = `${block.content || ''} ${block.chapterName || ''} ${block.type || ''} ${block.numberId || ''} ${metaString}`;
           const tokens = tokenize(searchableText);
           
           docLengths.set(block.id, tokens.length);

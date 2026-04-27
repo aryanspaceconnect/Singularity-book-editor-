@@ -38,22 +38,71 @@ export default function ResearchDialog({ contextText = '' }: { contextText?: str
       const chatWithHistory = ai.chats.create({
         model: 'gemini-3.1-pro-preview', // Pro model for deep research
         config: {
-          systemInstruction: `You are an elite academic and web Research Agent. Your sole purpose is to assist the user by deeply investigating their queries using live web search. 
+          systemInstruction: `You are an elite academic and web Research Agent. Your sole purpose is to assist the user by deeply investigating their queries using live web search and book repositories. 
 
 CORE RULES:
-1. USE WEB SEARCH: Always use your Google Search tool for factual, current, or deep contextual information.
-2. SYNTHESIZE & CITE: Do not just spit out raw facts. Synthesize information thoughtfully, format it beautifully with markdown, and implicitly reference the angles you found online.
+1. USE TOOLS: Always try to use your tools (googleSearch or search_open_library) to find factual, deep contextual information, or books and authors.
+2. SYNTHESIZE & CITE: Do not just spit out raw facts. Synthesize information thoughtfully, format it beautifully with markdown, and implicitly reference the angles you found online or books you discovered.
 3. CONTEXT AWARENESS: You have access to the user's current book/document text. Tailor your research to naturally fit the tone, era, or subject matter they are writing about.
 4. BE EXHAUSTIVE BUT CONCISE: Provide detailed bullet points, nuanced perspectives, and actionable information, skipping useless generic filler. 
 
 Context from the user's current book/selection:
 ${contextText.substring(0, 5000)}`,
-          tools: [{ googleSearch: {} }]
+          tools: [{ googleSearch: {} }, {
+            functionDeclarations: [
+              {
+                name: "search_open_library",
+                description: "Search the Open Library repository for books and literature by title, author, or subject. Returns a list of books matching the query.",
+                parameters: {
+                  type: "object",
+                  properties: { query: { type: "string" } },
+                  required: ["query"]
+                }
+              }
+            ]
+          }]
         },
         history: history
       });
 
-      const response = await chatWithHistory.sendMessage({ message: userMsg });
+      let response = await chatWithHistory.sendMessage({ message: userMsg });
+      
+      // Handle potential function calls from search_open_library
+      while (response.functionCalls && response.functionCalls.length > 0) {
+        const fc = response.functionCalls[0];
+        if (fc.name === 'search_open_library') {
+          const q = fc.args?.query;
+          try {
+             // Let user know what we're doing
+             setMessages(prev => [...prev, { role: 'assistant', content: `*Searching Open Library for: "${q}"...*` }]);
+             const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=5`);
+             const data = await res.json();
+             // Just take the first 5 results to save context
+             const rawBooks = data.docs?.slice(0, 5) || [];
+             const booksDesc = JSON.stringify(rawBooks.map((b: any) => ({
+                 title: b.title,
+                 author: b.author_name?.join(', '),
+                 firstPublished: b.first_publish_year,
+                 subjects: b.subject?.slice(0, 5).join(', ')
+             })));
+
+             setMessages(prev => prev.slice(0, -1)); // remove status
+             
+             response = await chatWithHistory.sendMessage({
+                message: [{ functionResponse: { name: fc.name, response: { result: booksDesc } } }] as any
+             });
+          } catch(e) {
+             console.error("Tool execution failed", e);
+             setMessages(prev => prev.slice(0, -1)); // remove status
+             response = await chatWithHistory.sendMessage({
+                message: [{ functionResponse: { name: fc.name, response: { error: "Failed to fetch from Open Library." } } }] as any
+             });
+          }
+        } else {
+             break;
+        }
+      }
+
       setMessages(prev => [...prev, { role: 'assistant', content: response.text || "No results found." }]);
     } catch (error) {
       console.error("Error researching:", error);
