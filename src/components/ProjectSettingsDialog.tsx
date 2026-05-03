@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Settings, Ruler, Grid3X3, Palette, Maximize2, Key, FileText, Users, Plus, Trash2 } from 'lucide-react';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { Settings, Ruler, Grid3X3, Palette, Maximize2, Key, FileText, Users, Plus, Trash2, Activity } from 'lucide-react';
+import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -53,6 +53,7 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
 
   const [newContributorId, setNewContributorId] = useState('');
   const [newContributorRole, setNewContributorRole] = useState('Editor');
+  const [logs, setLogs] = useState<any[]>([]);
 
   const [verifying, setVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState<'success' | 'failure' | null>(null);
@@ -75,7 +76,17 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
           setSettings(prev => ({ ...prev, ...data }));
         }
       });
-      return () => unsubscribe();
+      
+      const logsRef = collection(db, 'projects', projectId, 'errorLogs');
+      const q = query(logsRef, orderBy('createdAt', 'desc'), limit(50));
+      const unsubscribeLogs = onSnapshot(q, (snap) => {
+        setLogs(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
+
+      return () => {
+        unsubscribe();
+        unsubscribeLogs();
+      };
     }
   }, [open, projectId]);
 
@@ -133,13 +144,37 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
         </DialogHeader>
 
         <Tabs defaultValue="general" className="mt-6">
-          <TabsList className="grid w-full grid-cols-5 bg-muted rounded-xl">
+          <TabsList className="grid w-full grid-cols-6 bg-muted rounded-xl">
             <TabsTrigger value="general" className="rounded-lg data-[state=active]:bg-background"><FileText className="h-4 w-4 mr-1" /> General</TabsTrigger>
             <TabsTrigger value="contributors" className="rounded-lg data-[state=active]:bg-background"><Users className="h-4 w-4 mr-1" /> Credits</TabsTrigger>
             <TabsTrigger value="dimensions" className="rounded-lg data-[state=active]:bg-background"><Ruler className="h-4 w-4 mr-1" /> Size</TabsTrigger>
             <TabsTrigger value="layout" className="rounded-lg data-[state=active]:bg-background"><Grid3X3 className="h-4 w-4 mr-1" /> Layout</TabsTrigger>
             <TabsTrigger value="aesthetics" className="rounded-lg data-[state=active]:bg-background"><Palette className="h-4 w-4 mr-1" /> Style</TabsTrigger>
+            <TabsTrigger value="diagnostics" className="rounded-lg data-[state=active]:bg-background"><Activity className="h-4 w-4 mr-1" /> Logs</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="diagnostics" className="space-y-4 pt-6">
+            <div className="flex flex-col gap-2">
+              <Label>System Logs & Diagnostics</Label>
+              <p className="text-xs text-muted-foreground">Monitor parser background tasks and error events occurring in your editor.</p>
+            </div>
+            
+            <div className="mt-4 border border-border rounded-xl bg-muted/20 flex flex-col gap-1 p-2 max-h-[300px] overflow-y-auto">
+              {logs.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">No logs recorded yet.</div>
+              ) : (
+                logs.map((log) => (
+                  <div key={log.id} className="flex flex-col p-3 bg-background border border-border rounded-lg text-xs font-mono">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="font-bold text-destructive">{log.context || 'System'}</span>
+                      <span className="text-muted-foreground opactity-50">{new Date(log.createdAt).toLocaleString()}</span>
+                    </div>
+                    <div className="text-muted-foreground break-all whitespace-pre-wrap">{log.message}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </TabsContent>
 
           <TabsContent value="contributors" className="space-y-4 pt-6">
             <div className="flex flex-col gap-2">
@@ -212,7 +247,13 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
             </div>
             <div className="grid gap-2">
               <Label htmlFor="observerModel">AI Model</Label>
-              <Select value={settings.observerModel || AI_MODELS[0].id} onValueChange={(val) => { updateSetting('observerModel', val); setVerificationResult(null); }}>
+              <Select 
+                 value={(settings.observerModel || AI_MODELS[0].id).startsWith('custom-google') ? 'custom-google' : (settings.observerModel || AI_MODELS[0].id).startsWith('custom-nvidia') ? 'custom-nvidia' : (settings.observerModel || AI_MODELS[0].id)} 
+                 onValueChange={(val) => { 
+                   updateSetting('observerModel', val === 'custom-google' ? 'custom-google:' : val === 'custom-nvidia' ? 'custom-nvidia:' : val); 
+                   setVerificationResult(null); 
+                 }}
+              >
                 <SelectTrigger className="bg-muted/50 border-border">
                   <SelectValue placeholder="Select Model" />
                 </SelectTrigger>
@@ -222,6 +263,14 @@ export default function ProjectSettingsDialog({ projectId, trigger }: { projectI
                   ))}
                 </SelectContent>
               </Select>
+              {((settings.observerModel || '').startsWith('custom-google') || (settings.observerModel || '').startsWith('custom-nvidia')) && (
+                <Input
+                  placeholder="Enter exact model ID..."
+                  value={(settings.observerModel || '').split(':')[1] || ''}
+                  onChange={(e) => updateSetting('observerModel', `${(settings.observerModel || '').split(':')[0]}:${e.target.value}`)}
+                  className="mt-1 bg-muted/50 border-border text-xs h-8"
+                />
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="observerApiKey" className="flex items-center gap-2">

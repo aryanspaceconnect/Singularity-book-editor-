@@ -103,10 +103,12 @@ ${contextText.substring(0, 5000)}`,
         }
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: response.text || "No results found." }]);
-    } catch (error) {
+      const extractedText = response.candidates?.[0]?.content?.parts?.filter((p: any) => p.text).map((p: any) => p.text).join('').trim() || '';
+      setMessages(prev => [...prev, { role: 'assistant', content: extractedText || "No results found." }]);
+    } catch (error: any) {
       console.error("Error researching:", error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "An error occurred during research." }]);
+      const msg = error?.message || "An error occurred during research.";
+      setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${msg}` }]);
     } finally {
       setLoading(false);
     }

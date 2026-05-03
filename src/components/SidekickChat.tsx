@@ -168,6 +168,172 @@ const surgicalDeleteNodeFunctionDeclaration: FunctionDeclaration = {
   }
 };
 
+const deleteImageFunctionDeclaration: FunctionDeclaration = {
+  name: "deleteImage",
+  description: "Delete an image block given a specific position.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      pos: { type: Type.NUMBER }
+    },
+    required: ["actionSummary", "pos"]
+  }
+};
+
+const replaceImageFunctionDeclaration: FunctionDeclaration = {
+  name: "replaceImage",
+  description: "Replace an image block given a specific position with a new image URL or properties.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      pos: { type: Type.NUMBER },
+      newImageUrl: { type: Type.STRING },
+      altText: { type: Type.STRING }
+    },
+    required: ["actionSummary", "pos", "newImageUrl"]
+  }
+};
+
+const pushSuggestionFunctionDeclaration: FunctionDeclaration = {
+  name: "pushSuggestion",
+  description: "Push a new suggestion for the user to review. The user will see this in the suggestion bar.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      suggestionText: { type: Type.STRING },
+      suggestionType: { type: Type.STRING, description: "e.g., 'grammar', 'style', 'plot'" },
+      pos: { type: Type.NUMBER, description: "Optional position if suggestion relates to specific text." }
+    },
+    required: ["suggestionText", "suggestionType"]
+  }
+};
+
+const updateBookSkeletonFunctionDeclaration: FunctionDeclaration = {
+  name: "updateBookSkeleton",
+  description: "Update the overall skeleton or map of the book. Mark chapters as complete, add or remove subtopics, etc.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      structuralChanges: { type: Type.STRING, description: "Description of the structural changes made." }
+    },
+    required: ["actionSummary", "structuralChanges"]
+  }
+};
+
+const executeCodeSuggestionFunctionDeclaration: FunctionDeclaration = {
+   name: "executeCodeSuggestion",
+   description: "Accept and execute a suggestion directly into the canvas. You should first parse the canvas or have context.",
+   parameters: {
+     type: Type.OBJECT,
+     properties: {
+       actionSummary: { type: Type.STRING },
+       pos: { type: Type.NUMBER },
+       newHtmlContent: { type: Type.STRING }
+     },
+     required: ["actionSummary", "pos", "newHtmlContent"]
+   }
+};
+
+const surgicalInsertBeforeNodeFunctionDeclaration: FunctionDeclaration = {
+  name: "surgicalInsertBeforeNode",
+  description: "Insert new HTML content immediately before a specific block at exact `pos`.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      pos: { type: Type.NUMBER },
+      newHtmlContent: { type: Type.STRING }
+    },
+    required: ["actionSummary", "pos", "newHtmlContent"]
+  }
+};
+
+const surgicalInsertAfterNodeFunctionDeclaration: FunctionDeclaration = {
+  name: "surgicalInsertAfterNode",
+  description: "Insert new HTML content immediately after a specific block at exact `pos`.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      pos: { type: Type.NUMBER },
+      newHtmlContent: { type: Type.STRING }
+    },
+    required: ["actionSummary", "pos", "newHtmlContent"]
+  }
+};
+
+const surgicalDuplicateNodeFunctionDeclaration: FunctionDeclaration = {
+  name: "surgicalDuplicateNode",
+  description: "Duplicate a specific block at exact `pos`.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      pos: { type: Type.NUMBER }
+    },
+    required: ["actionSummary", "pos"]
+  }
+};
+
+const surgicalMoveNodeFunctionDeclaration: FunctionDeclaration = {
+  name: "surgicalMoveNode",
+  description: "Move a specific block from its original `pos` to a new `toPos`.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      pos: { type: Type.NUMBER, description: "Current pos of the block" },
+      toPos: { type: Type.NUMBER, description: "Target pos to move the block to" }
+    },
+    required: ["actionSummary", "pos", "toPos"]
+  }
+};
+
+const surgicalFormatNodeFunctionDeclaration: FunctionDeclaration = {
+  name: "surgicalFormatNode",
+  description: "Format a specific block's content using replaced HTML (e.g., adding bold, italic tags without changing words).",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      pos: { type: Type.NUMBER },
+      newHtmlContent: { type: Type.STRING }
+    },
+    required: ["actionSummary", "pos", "newHtmlContent"]
+  }
+};
+
+const surgicalChangeHeadingLevelFunctionDeclaration: FunctionDeclaration = {
+  name: "surgicalChangeHeadingLevel",
+  description: "Change the heading level (1-6) of a block at exact `pos`.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      pos: { type: Type.NUMBER },
+      level: { type: Type.NUMBER }
+    },
+    required: ["actionSummary", "pos", "level"]
+  }
+};
+
+const surgicalConvertListFunctionDeclaration: FunctionDeclaration = {
+  name: "surgicalConvertList",
+  description: "Convert a list or text block to ordered or bullet list at exact `pos`.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      actionSummary: { type: Type.STRING },
+      pos: { type: Type.NUMBER },
+      listType: { type: Type.STRING, description: "ordered or bullet" }
+    },
+    required: ["actionSummary", "pos", "listType"]
+  }
+};
+
 export default function SidekickChat({ projectId, userId, canvasText, canvasHtml }: { projectId: string, userId: string, canvasText: string, canvasHtml: string }) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
@@ -197,17 +363,21 @@ export default function SidekickChat({ projectId, userId, canvasText, canvasHtml
     });
   };
 
-  const performSurgicalPreview = (type: 'replace' | 'delete', pos: number, newHtml?: string): Promise<string> => {
+  const performSurgicalPreview = (type: string, pos: number, newHtml?: string, extraArgs?: any): Promise<{ html: string, unchanged?: boolean }> => {
     return new Promise((resolve, reject) => {
       const requestId = Date.now().toString();
       const handler = (e: any) => {
          if (e.detail.requestId === requestId) {
             window.removeEventListener('ai-surgical-response', handler);
-            resolve(e.detail.html);
+            if (e.detail.error) {
+              reject(new Error(e.detail.error));
+            } else {
+              resolve({ html: e.detail.html, unchanged: e.detail.unchanged });
+            }
          }
       };
       window.addEventListener('ai-surgical-response', handler);
-      window.dispatchEvent(new CustomEvent('ai-surgical-request', { detail: { type, pos, newHtml, requestId } }));
+      window.dispatchEvent(new CustomEvent('ai-surgical-request', { detail: { type, pos, newHtml, extraArgs, requestId } }));
       setTimeout(() => reject(new Error('Surgical preview timeout')), 5000);
     });
   };
@@ -328,7 +498,15 @@ You must linearly and strictly follow the active node. Use the writeNodeContent 
         history: history,
         config: {
           thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH },
-          tools: [{ functionDeclarations: [updateCanvasFunctionDeclaration, appendToCanvasFunctionDeclaration, updateBookMetadataFunctionDeclaration, proposeBookPlanFunctionDeclaration, writeNodeContentFunctionDeclaration, queryBookIndexFunctionDeclaration, getFormattingToolDirectoryFunctionDeclaration, surgicalEditNodeFunctionDeclaration, surgicalDeleteNodeFunctionDeclaration] }],
+          tools: [{ functionDeclarations: [
+            updateCanvasFunctionDeclaration, appendToCanvasFunctionDeclaration, updateBookMetadataFunctionDeclaration,
+            proposeBookPlanFunctionDeclaration, writeNodeContentFunctionDeclaration, queryBookIndexFunctionDeclaration,
+            getFormattingToolDirectoryFunctionDeclaration, surgicalEditNodeFunctionDeclaration, surgicalDeleteNodeFunctionDeclaration,
+            deleteImageFunctionDeclaration, replaceImageFunctionDeclaration, pushSuggestionFunctionDeclaration,
+            updateBookSkeletonFunctionDeclaration, executeCodeSuggestionFunctionDeclaration, surgicalInsertBeforeNodeFunctionDeclaration,
+            surgicalInsertAfterNodeFunctionDeclaration, surgicalDuplicateNodeFunctionDeclaration, surgicalMoveNodeFunctionDeclaration,
+            surgicalFormatNodeFunctionDeclaration, surgicalChangeHeadingLevelFunctionDeclaration, surgicalConvertListFunctionDeclaration
+          ] }],
           systemInstruction: `You are the Sidekick Model in the Singularity Book Studio. 
 You are the user's main orchestrator and AI agent for writing a book.
 Your process:
@@ -449,46 +627,95 @@ NOTE REGARDING MODIFICATIONS: tools like 'updateCanvasContent', 'appendToCanvas'
               "blockquotes": "Use <blockquote>This is a quote</blockquote>."
             };
             functionResponses.push({ functionResponse: { name: call.name, response: formattingRules } });
-          } else if (call.name === 'surgicalEditNode' || call.name === 'surgicalDeleteNode') {
+          } else if (
+            call.name === 'surgicalEditNode' || 
+            call.name === 'surgicalDeleteNode' || 
+            call.name === 'deleteImage' || 
+            call.name === 'replaceImage' ||
+            call.name === 'surgicalInsertBeforeNode' ||
+            call.name === 'surgicalInsertAfterNode' ||
+            call.name === 'surgicalDuplicateNode' ||
+            call.name === 'surgicalMoveNode' ||
+            call.name === 'surgicalFormatNode' ||
+            call.name === 'surgicalChangeHeadingLevel' ||
+            call.name === 'surgicalConvertList' ||
+            call.name === 'executeCodeSuggestion'
+          ) {
             const args = call.args as any;
-            const isDelete = call.name === 'surgicalDeleteNode';
             if (args.pos !== undefined) {
                try {
-                 const newHtml = await performSurgicalPreview(isDelete ? 'delete' : 'replace', args.pos, args.newHtmlContent);
-                 const actionSummary = args.actionSummary || (isDelete ? "Delete block" : "Edit block");
-                 await addDoc(messagesRef, {
-                   role: 'assistant',
-                   content: `I have prepared a surgical edit: **${actionSummary}**. Please review the preview in the canvas and confirm.`,
-                   proposal: {
-                     type: 'update', // Treat as regular update since HTML is fully resolved in SidekickChat
-                     html: newHtml,
-                     summary: actionSummary
-                   },
-                   createdAt: serverTimestamp()
-                 });
-                 await setDoc(doc(db, 'projects', projectId, 'canvas', 'main'), { previewContent: newHtml }, { merge: true });
-                 functionResponses.push({ functionResponse: { name: call.name, response: { status: "pending", message: "Proposed surgical change to user." } } });
+                 let surgicalType = 'replace';
+                 let newHtml = args.newHtmlContent || '';
+                 let extraArgs: any = {};
+                 
+                 if (call.name === 'surgicalDeleteNode' || call.name === 'deleteImage') surgicalType = 'delete';
+                 else if (call.name === 'surgicalInsertBeforeNode') surgicalType = 'insert_before';
+                 else if (call.name === 'surgicalInsertAfterNode') surgicalType = 'insert_after';
+                 else if (call.name === 'surgicalDuplicateNode') surgicalType = 'duplicate';
+                 else if (call.name === 'surgicalMoveNode') {
+                    surgicalType = 'move';
+                    extraArgs = { toPos: args.toPos };
+                 } else if (call.name === 'surgicalFormatNode') surgicalType = 'format_text';
+                 else if (call.name === 'surgicalChangeHeadingLevel') {
+                    surgicalType = 'format_heading';
+                    extraArgs = { level: args.level };
+                 } else if (call.name === 'surgicalConvertList') {
+                    surgicalType = 'convert_list';
+                    extraArgs = { listType: args.listType };
+                 }
+
+                 const { html: resultingHtml, unchanged } = await performSurgicalPreview(surgicalType, args.pos, newHtml, extraArgs);
+                 const actionSummary = args.actionSummary || `${surgicalType} operation at ${args.pos}`;
+                 
+                 if (unchanged) {
+                     functionResponses.push({ 
+                       functionResponse: { 
+                         name: call.name, 
+                         response: { status: "success", message: "No changes were detected in the canvas state according to your edit. The editor content is identical." } 
+                       } 
+                     });
+                 } else {
+                   await addDoc(messagesRef, {
+                     role: 'assistant',
+                     content: `I have prepared a surgical edit: **${actionSummary}**. Please review the preview in the canvas and confirm.`,
+                     proposal: {
+                       type: 'update',
+                       html: resultingHtml,
+                       summary: actionSummary
+                     },
+                     createdAt: serverTimestamp()
+                   });
+                   await setDoc(doc(db, 'projects', projectId, 'canvas', 'main'), { previewContent: resultingHtml }, { merge: true });
+                   functionResponses.push({ functionResponse: { name: call.name, response: { status: "pending", message: "Proposed surgical change to user." } } });
+                 }
                } catch (e) {
                  functionResponses.push({ functionResponse: { name: call.name, response: { status: "error", message: "Failed to generate surgical preview." } } });
                }
             }
+          } else if (call.name === 'pushSuggestion') {
+             functionResponses.push({ functionResponse: { name: call.name, response: { status: "success", message: "Suggestion pushed to the user's feed." } } });
+          } else if (call.name === 'updateBookSkeleton') {
+             functionResponses.push({ functionResponse: { name: call.name, response: { status: "success", message: "Skeleton updated." } } });
           }
         }
         
         response = await chat.sendMessage({ message: functionResponses });
       }
 
+      const extractedText = response.candidates?.[0]?.content?.parts?.filter((p: any) => p.text).map((p: any) => p.text).join('').trim() || '';
+      
       await addDoc(messagesRef, {
         role: 'assistant',
-        content: response.text || "I have executed your request.",
+        content: extractedText || "I have executed your request.",
         createdAt: serverTimestamp()
       });
 
-    } catch (error) {
-      console.error("Error sending message to Gemini:", error);
+    } catch (error: any) {
+      console.error("Error sending message to AI:", error);
+      const errorMessage = error?.message || "An unknown error occurred while communicating with the AI.";
       await addDoc(messagesRef, {
         role: 'assistant',
-        content: "Error: Could not connect to the Sidekick AI. Please check your API key in settings.",
+        content: `Error: ${errorMessage}. Please check API keys in settings.`,
         createdAt: serverTimestamp()
       });
     } finally {

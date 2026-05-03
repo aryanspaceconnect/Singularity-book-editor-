@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { getProviderForModel } from '../services/aiModels';
+import { getProviderForModel, extractActualModelId } from '../services/aiModels';
 
 export class UniversalAI {
   private _apiKey: string;
@@ -28,13 +28,14 @@ export class UniversalAI {
         }
 
         const provider = getProviderForModel(modelId);
+        const actualModelId = extractActualModelId(modelId);
 
         if (provider === 'google') {
-          return this._geminiClient.chats.create({ ...config, model: modelId });
+          return this._geminiClient.chats.create({ ...config, model: actualModelId });
         }
 
-        // OpenRouter Polyfill for .chats.create()
-        return new OpenRouterChatSession(this._apiKey, modelId, config);
+        // Nvidia Polyfill for .chats.create()
+        return new NvidiaChatSession(this._apiKey, actualModelId, config);
       }
     };
   }
@@ -47,13 +48,14 @@ export class UniversalAI {
             modelId = this._defaultModel; // Override
         }
         const provider = getProviderForModel(modelId);
+        const actualModelId = extractActualModelId(modelId);
 
         if (provider === 'google') {
-          return this._geminiClient.models.generateContent({ ...config, model: modelId });
+          return this._geminiClient.models.generateContent({ ...config, model: actualModelId });
         }
 
-        // OpenRouter polyfill for generateContent
-        return new OpenRouterModel(this._apiKey, modelId).generateContent(config);
+        // Nvidia polyfill for generateContent
+        return new NvidiaModel(this._apiKey, actualModelId).generateContent(config);
       }
     };
   }
@@ -62,7 +64,7 @@ export class UniversalAI {
   get provider() { return this._provider; }
 }
 
-class OpenRouterModel {
+class NvidiaModel {
   constructor(private apiKey: string, private modelId: string) {}
 
   async generateContent(config: any) {
@@ -99,7 +101,14 @@ class OpenRouterModel {
     
     const body: any = {
       model: this.modelId,
-      messages: messages
+      messages: messages,
+      temperature: 1,
+      top_p: 1,
+      max_tokens: 16384,
+      chat_template_kwargs: {
+        enable_thinking: true,
+        clear_thinking: false
+      }
     };
 
     let toolsConfig = config.tools;
@@ -108,35 +117,102 @@ class OpenRouterModel {
     }
 
     if (toolsConfig && Array.isArray(toolsConfig)) {
-      const tools = mapToolsToOpenRouter(toolsConfig);
+      const tools = mapToolsToNvidia(toolsConfig);
       if (tools.length > 0) {
         body.tools = tools;
       }
     }
 
     if (!this.apiKey) {
-      throw new Error(`OpenRouter API key is missing. Please add OPENROUTER_API_KEY in the AI Studio Secrets panel.`);
+      this.apiKey = "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";
     }
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${this.apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": typeof window !== 'undefined' ? window.location.href : "https://ai.studio.app",
-        "X-Title": "AI Studio Book App"
-      },
-      body: JSON.stringify(body)
-    });
+    // Force streaming to avoid network timeouts on big generations
+    body.stream = true;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    let response;
+    try {
+      response = await fetch("/api/agents/nvidia", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`OpenRouter API error (${response.status}): ${errorText}`);
+      throw new Error(`NVIDIA API error (${response.status}): ${errorText}`);
     }
 
-    const data = await response.json();
-    const assistantMessage = data.choices?.[0]?.message;
+    let fullContent = "";
+    let fullReasoning = "";
+    let functionCallsMap = new Map<number, any>();
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
     
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data: ")) continue;
+          const dataStr = trimmed.replace("data: ", "").trim();
+          if (dataStr === "[DONE]") continue;
+          let data;
+          try {
+            data = JSON.parse(dataStr);
+          } catch (e) {
+            continue;
+          }
+          if (data.error) {
+            throw new Error(`NVIDIA Stream Error: ${data.error.message || JSON.stringify(data.error)}`);
+          }
+          const delta = data.choices?.[0]?.delta;
+          if (!delta) continue;
+          
+          if (delta.reasoning_content) fullReasoning += delta.reasoning_content;
+          if (delta.content) fullContent += delta.content;
+          
+          if (delta.tool_calls && Array.isArray(delta.tool_calls)) {
+            for (const tc of delta.tool_calls) {
+              if (!functionCallsMap.has(tc.index)) {
+                functionCallsMap.set(tc.index, { id: tc.id, function: { name: tc.function?.name || "", arguments: tc.function?.arguments || "" } });
+              } else {
+                const existing = functionCallsMap.get(tc.index);
+                if (tc.function?.arguments) {
+                  existing.function.arguments += tc.function.arguments;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const assistantMessage: any = {
+      role: 'assistant',
+      content: fullContent
+    };
+
+    if (fullReasoning) {
+      assistantMessage.reasoning_content = fullReasoning;
+      assistantMessage.content = `<details class="my-2 border p-2 rounded-md border-gray-600 bg-gray-900 text-gray-400"><summary class="cursor-pointer font-semibold text-gray-300">Reasoning</summary>\n\n${fullReasoning}\n</details>\n\n${fullContent}`;
+    }
+
     let functionCalls: any[] | undefined = undefined;
     if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
       functionCalls = assistantMessage.tool_calls.map((tc: any) => {
@@ -151,20 +227,25 @@ class OpenRouterModel {
 
     return {
       text: assistantMessage?.content || "",
-      functionCalls
+      functionCalls,
+      candidates: [{
+        content: {
+          parts: [{ text: assistantMessage?.content || "" }]
+        }
+      }]
     };
   }
 }
 
-function mapToolsToOpenRouter(geminiTools: any[]) {
-  const openRouterTools: any[] = [];
+function mapToolsToNvidia(geminiTools: any[]) {
+  const nvidiaTools: any[] = [];
   for (const group of geminiTools) {
     if (group.functionDeclarations && Array.isArray(group.functionDeclarations)) {
       for (const fn of group.functionDeclarations) {
         // Deep copy parameters to modify case
         const parameters = JSON.parse(JSON.stringify(fn.parameters || { type: "object", properties: {} }));
         
-        // Fix Types to lower case which OpenRouter/JSON schema expects
+        // Fix Types to lower case which JSON schema expects
         const fixTypes = (obj: any) => {
           if (obj && typeof obj === 'object') {
             if (obj.type && typeof obj.type === 'string') {
@@ -182,7 +263,7 @@ function mapToolsToOpenRouter(geminiTools: any[]) {
         };
         fixTypes(parameters);
 
-        openRouterTools.push({
+        nvidiaTools.push({
           type: "function",
           function: {
             name: fn.name,
@@ -193,10 +274,10 @@ function mapToolsToOpenRouter(geminiTools: any[]) {
       }
     }
   }
-  return openRouterTools;
+  return nvidiaTools;
 }
 
-class OpenRouterChatSession {
+class NvidiaChatSession {
   private history: any[] = [];
   private systemInstruction: string = '';
   private tools: any[] | undefined = undefined;
@@ -209,15 +290,15 @@ class OpenRouterChatSession {
     }
 
     if (config.config && config.config.tools) {
-       const mappedTools = mapToolsToOpenRouter(config.config.tools);
+       const mappedTools = mapToolsToNvidia(config.config.tools);
        if (mappedTools.length > 0) this.tools = mappedTools;
     } else if (config.tools) {
-       const mappedTools = mapToolsToOpenRouter(config.tools);
+       const mappedTools = mapToolsToNvidia(config.tools);
        if (mappedTools.length > 0) this.tools = mappedTools;
     }
     
     if (config.history && Array.isArray(config.history)) {
-      // Map Gemini history to OpenRouter history
+      // Map Gemini history to OpenAI history
       this.history = config.history.map((h: any) => {
         let content = '';
         if (h.parts && Array.isArray(h.parts)) {
@@ -248,7 +329,7 @@ class OpenRouterChatSession {
 
     // If params is an array or object containing functionResponses
     if (Array.isArray(userMessage) && userMessage.length > 0 && userMessage[0].functionResponse) {
-       // Gemini passes function responses, OpenRouter needs role: "tool"
+       // Gemini passes function responses, OpenAI needs role: "tool"
        for (const fnResp of userMessage) {
            const { name, response } = fnResp.functionResponse;
            let lastAssistantMsg = this.history[this.history.length - 1];
@@ -284,7 +365,14 @@ class OpenRouterChatSession {
 
     const body: any = {
       model: this.modelId,
-      messages: cleanMessages
+      messages: cleanMessages,
+      temperature: 1,
+      top_p: 1,
+      max_tokens: 16384,
+      chat_template_kwargs: {
+        enable_thinking: true,
+        clear_thinking: false
+      }
     };
 
     if (this.tools) {
@@ -292,28 +380,106 @@ class OpenRouterChatSession {
     }
 
     if (!this.apiKey) {
-      throw new Error(`OpenRouter API key is missing. Please add OPENROUTER_API_KEY in the AI Studio Secrets panel.`);
+      this.apiKey = "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";
     }
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${this.apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": typeof window !== 'undefined' ? window.location.href : "https://ai.studio.app",
-        "X-Title": "AI Studio Book App"
-      },
-      body: JSON.stringify(body)
-    });
+    // Force streaming to avoid network timeouts on big generations
+    body.stream = true;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    let response;
+    try {
+      response = await fetch("/api/agents/nvidia", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`OpenRouter API error (${response.status}): ${errorText}`);
+      throw new Error(`NVIDIA API error (${response.status}): ${errorText}`);
     }
 
-    const data = await response.json();
-    const assistantMessage = data.choices?.[0]?.message;
+    let fullContent = "";
+    let fullReasoning = "";
+    let functionCallsMap = new Map<number, any>();
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
     
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data: ")) continue;
+          const dataStr = trimmed.replace("data: ", "").trim();
+          if (dataStr === "[DONE]") continue;
+          let data;
+          try {
+            data = JSON.parse(dataStr);
+          } catch (e) {
+            continue;
+          }
+          if (data.error) {
+            throw new Error(`NVIDIA Stream Error: ${data.error.message || JSON.stringify(data.error)}`);
+          }
+          const delta = data.choices?.[0]?.delta;
+          if (!delta) continue;
+          
+          if (delta.reasoning_content) fullReasoning += delta.reasoning_content;
+          if (delta.content) fullContent += delta.content;
+          
+          if (delta.tool_calls && Array.isArray(delta.tool_calls)) {
+            for (const tc of delta.tool_calls) {
+              if (!functionCallsMap.has(tc.index)) {
+                functionCallsMap.set(tc.index, { id: tc.id, function: { name: tc.function?.name || "", arguments: tc.function?.arguments || "" } });
+              } else {
+                const existing = functionCallsMap.get(tc.index);
+                if (tc.function?.arguments) {
+                  existing.function.arguments += tc.function.arguments;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    const assistantMessage: any = {
+      role: 'assistant',
+      content: fullContent
+    };
+
+    if (fullReasoning) {
+      assistantMessage.reasoning_content = fullReasoning;
+      assistantMessage.content = `<details class="my-2 border p-2 rounded-md border-gray-600 bg-gray-900 text-gray-400"><summary class="cursor-pointer font-semibold text-gray-300">Reasoning</summary>\n\n${fullReasoning}\n</details>\n\n${fullContent}`;
+    }
+
+    if (functionCallsMap.size > 0) {
+      assistantMessage.tool_calls = Array.from(functionCallsMap.values()).map(tc => ({
+        id: tc.id,
+        type: 'function',
+        function: {
+          name: tc.function.name,
+          arguments: tc.function.arguments
+        }
+      }));
+    }
+
     // Store in history
     if (assistantMessage) {
       this.history.push(assistantMessage);
@@ -333,7 +499,12 @@ class OpenRouterChatSession {
 
     return {
       text: assistantMessage?.content || "",
-      functionCalls
+      functionCalls,
+      candidates: [{
+        content: {
+          parts: [{ text: assistantMessage?.content || "" }]
+        }
+      }]
     };
   }
 }

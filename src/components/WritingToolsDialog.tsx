@@ -156,10 +156,12 @@ RULES:
         }
       }
 
-      setCharMessages(prev => [...prev, { role: 'assistant', content: response.text || "Character process finalized." }]);
-    } catch (error) {
+      const extractedText = response.candidates?.[0]?.content?.parts?.filter((p: any) => p.text).map((p: any) => p.text).join('').trim() || '';
+      setCharMessages(prev => [...prev, { role: 'assistant', content: extractedText || "Character process finalized." }]);
+    } catch (error: any) {
       console.error("Error researching:", error);
-      setCharMessages(prev => [...prev, { role: 'assistant', content: "An error occurred during chat." }]);
+      const msg = error?.message || "An unknown error occurred.";
+      setCharMessages(prev => [...prev, { role: 'assistant', content: `Error: ${msg}` }]);
     } finally {
       setCharLoading(false);
     }
@@ -167,12 +169,9 @@ RULES:
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* @ts-ignore - The asChild prop is present in Radix DialogTrigger but TS doesn't see it via this wrapping */}
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground rounded-full">
-          <Feather className="h-4 w-4 mr-2" />
-          Writer Tools
-        </Button>
+      <DialogTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground rounded-full" />}>
+        <Feather className="h-4 w-4 mr-2" />
+        Writer Tools
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col pt-6 bg-card border-border overflow-hidden p-0">
         <DialogHeader className="px-6 shrink-0 pt-6">

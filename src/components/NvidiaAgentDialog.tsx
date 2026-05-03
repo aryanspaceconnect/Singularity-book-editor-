@@ -71,9 +71,9 @@ Please include details on the geography, society, magic/technology system, and m
         const content = data.choices?.[0]?.message?.content || "No content generated.";
         setResult(content);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating with NVIDIA agent:", error);
-      setResult("An error occurred while connecting to the server.");
+      setResult(error?.message || "An error occurred while connecting to the server.");
     } finally {
       setLoading(false);
     }

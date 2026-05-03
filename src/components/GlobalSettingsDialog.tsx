@@ -79,7 +79,13 @@ export default function GlobalSettingsDialog({ userId, trigger }: { userId: stri
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="model" className="text-foreground">AI Model</Label>
-            <Select value={modelId} onValueChange={(val) => { setModelId(val); setVerificationResult(null); }}>
+            <Select 
+              value={modelId.startsWith('custom-google') ? 'custom-google' : modelId.startsWith('custom-nvidia') ? 'custom-nvidia' : modelId} 
+              onValueChange={(val) => { 
+                setModelId(val === 'custom-google' ? 'custom-google:' : val === 'custom-nvidia' ? 'custom-nvidia:' : val); 
+                setVerificationResult(null); 
+              }}
+            >
               <SelectTrigger className="bg-muted/50 border-border">
                 <SelectValue placeholder="Select Model" />
               </SelectTrigger>
@@ -89,6 +95,14 @@ export default function GlobalSettingsDialog({ userId, trigger }: { userId: stri
                 ))}
               </SelectContent>
             </Select>
+            {(modelId.startsWith('custom-google') || modelId.startsWith('custom-nvidia')) && (
+              <Input
+                placeholder="Enter exact model ID..."
+                value={modelId.split(':')[1] || ''}
+                onChange={(e) => setModelId(`${modelId.split(':')[0]}:${e.target.value}`)}
+                className="mt-1 bg-muted/50 border-border text-xs h-8"
+              />
+            )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="apiKey" className="text-foreground">Universal API Key</Label>

@@ -5,11 +5,11 @@ import { Block } from '../lib/search.worker';
 interface OmnibarProps {
   isOpen: boolean;
   onClose: () => void;
-  workerRef: React.MutableRefObject<Worker | null>;
+  worker: Worker | null;
   onSelectCallback: (block: Block) => void;
 }
 
-export default function Omnibar({ isOpen, onClose, workerRef, onSelectCallback }: OmnibarProps) {
+export default function Omnibar({ isOpen, onClose, worker, onSelectCallback }: OmnibarProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Block[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -40,9 +40,8 @@ export default function Omnibar({ isOpen, onClose, workerRef, onSelectCallback }
 
   // Setup worker listener for search results
   useEffect(() => {
-    if (!workerRef.current) return;
+    if (!worker) return;
     
-    const worker = workerRef.current;
     const handleMessage = (e: MessageEvent) => {
       if (e.data.action === 'SEARCH_RESULTS') {
         setResults(e.data.results || []);
@@ -57,7 +56,7 @@ export default function Omnibar({ isOpen, onClose, workerRef, onSelectCallback }
     
     worker.addEventListener('message', handleMessage);
     return () => worker.removeEventListener('message', handleMessage);
-  }, [workerRef]);
+  }, [worker]);
 
   // Handle query changes
   useEffect(() => {
@@ -69,8 +68,8 @@ export default function Omnibar({ isOpen, onClose, workerRef, onSelectCallback }
     
     setIsSearching(true);
     const timer = setTimeout(() => {
-      if (workerRef.current) {
-        workerRef.current.postMessage({ 
+      if (worker) {
+        worker.postMessage({ 
           action: 'SEARCH', 
           payload: { query }, 
           queryId: Date.now() 
@@ -79,7 +78,7 @@ export default function Omnibar({ isOpen, onClose, workerRef, onSelectCallback }
     }, 150);
 
     return () => clearTimeout(timer);
-  }, [query, workerRef]);
+  }, [query, worker]);
 
   const groupByChapter = (blocks: Block[]) => {
     const groups: Record<string, Block[]> = {};

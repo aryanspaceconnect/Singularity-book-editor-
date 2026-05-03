@@ -55,8 +55,8 @@ export function AIProvider({ children, userId, projectId }: { children: React.Re
   const activeModel = observerModel || universalModel || AI_MODELS[0].id;
   
   let fallbackKey = process.env.GEMINI_API_KEY;
-  if (getProviderForModel(activeModel) === 'openrouter') {
-     fallbackKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
+  if (getProviderForModel(activeModel) === 'nvidia') {
+     fallbackKey = "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";
   }
   
   const activeApiKey = observerApiKey || universalApiKey || fallbackKey;
@@ -75,8 +75,8 @@ export function useAI() {
     // Fallback if used outside provider
     const defaultModel = AI_MODELS[0].id;
     let fallbackKey = process.env.GEMINI_API_KEY;
-    if (getProviderForModel(defaultModel) === 'openrouter') {
-       fallbackKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY;
+    if (getProviderForModel(defaultModel) === 'nvidia') {
+       fallbackKey = "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";
     }
     return { ai: new UniversalAI(fallbackKey, defaultModel), universalApiKey: null, observerApiKey: null };
   }

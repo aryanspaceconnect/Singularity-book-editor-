@@ -25,7 +25,7 @@ import { BookTypography, DropCap, PageBreak, CustomImage, SmartPunctuation, Font
 import { ChapterHeader, EpistolaryLetter, TerminalLog, BlockEpigraph, ManuscriptNote, DialogueSpoken, InternalMonologue, RedactedText, SignageText, NewspaperClipping, LitRPGQuest, LitRPGStatBlock, ScreenplayDialogue, ScreenplayCharacter, DedicationFont, ProsePoetry, TextMessage, TextMessageReply, GlossaryDefinition, TimelineDate, FleuronBreak } from '../lib/book-nodes';
 import { SlashCommands, slashCommandSuggestion } from '../lib/slash-commands';
 import { useEffect, useState, useRef } from 'react';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Loading02Icon as Loader2, TextBoldIcon as Bold, TextItalicIcon as Italic, TextStrikethroughIcon as Strikethrough, Heading01Icon as Heading1, Heading02Icon as Heading2, Heading03Icon as Heading3, Heading04Icon as Heading4, Heading05Icon as Heading5, Heading02Icon as Heading6, ListViewIcon as List, LeftToRightListNumberIcon as ListOrdered, QuoteDownIcon as Quote, TextAlignLeftIcon as AlignLeft, TextAlignCenterIcon as AlignCenter, TextAlignRightIcon as AlignRight, TextAlignJustifyCenterIcon as AlignJustify, TextIcon as Type, Scissor01Icon as Scissors, CheckmarkBadge01Icon as Check, Alert01Icon as AlertCircle, Download01Icon as Download, TextUnderlineIcon as UnderlineIcon, TextSubscriptIcon as SubscriptIcon, TextSuperscriptIcon as SuperscriptIcon, Link01Icon as LinkIcon, CheckmarkBadge01Icon as CheckSquare, Table01Icon as TableIcon, PaintBoardIcon as Palette, AiMagicIcon as Highlighter, Comment01Icon as MessageSquareWarning, MinusSignIcon as Minus, Layout01Icon as Rows, Layout03Icon as Columns, ArrowLeftRightIcon as Split, Delete02Icon as Trash2, Settings02Icon as Settings2, PlusSignIcon as Plus, ArrowTurnBackwardIcon as Undo, ArrowTurnForwardIcon as Redo, MagicWand01Icon as Sparkles, MagicWand02Icon as Wand2 } from 'hugeicons-react';
 import { CircleNotch, CheckCircle, WarningCircle } from '@phosphor-icons/react';
@@ -80,6 +80,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   const [isMediaDialogOpen, setIsMediaDialogOpen] = useState(false);
   
   // Biodification Search System
+  const [searchWorker, setSearchWorker] = useState<Worker | null>(null);
   const searchWorkerRef = useRef<Worker | null>(null);
   const [isOmnibarOpen, setIsOmnibarOpen] = useState(false);
 
@@ -319,7 +320,18 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
           textContent: text,
           updatedAt: new Date().toISOString()
         }, { merge: true })
-          .then(() => setSaveStatus('saved'))
+          .then(() => {
+             setSaveStatus('saved');
+             // Save AST index implicitly to a subcollection document to not bloat main doc
+             const astRef = doc(db, 'projects', projectId, 'canvas', 'astIndex');
+             setDoc(astRef, {
+               blocks: buildSearchIndex(editor),
+               updatedAt: new Date().toISOString()
+             }, { merge: true }).catch((err) => {
+               const logsRef = collection(db, 'projects', projectId, 'errorLogs');
+               addDoc(logsRef, { context: 'AST Persistence', message: err.message, createdAt: new Date().toISOString() });
+             });
+          })
           .catch((e) => {
             console.error("Error saving document:", e);
             setSaveStatus('error');
@@ -329,7 +341,9 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
   });
 
   useEffect(() => {
-    searchWorkerRef.current = new SearchWorker();
+    const worker = new SearchWorker();
+    searchWorkerRef.current = worker;
+    setSearchWorker(worker);
 
     const handleCmdK = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -381,34 +395,68 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
     };
 
     const handleAiSurgicalRequest = (e: any) => {
-      const { type, pos, newHtml, requestId } = e.detail;
+      const { type, pos, newHtml, extraArgs, requestId } = e.detail;
       if (!editor) {
          window.dispatchEvent(new CustomEvent('ai-surgical-response', { detail: { requestId, html: '' } }));
          return;
       }
       
-      const node = editor.state.doc.nodeAt(pos);
-      if (!node) {
-        window.dispatchEvent(new CustomEvent('ai-surgical-response', { detail: { requestId, html: editor.getHTML() } }));
-        return;
-      }
+      try {
+        const node = editor.state.doc.nodeAt(pos);
+        if (!node) throw new Error("Node not found at exact pos");
 
-      // Record current state to revert back after we get the HTML
-      const oldJSON = editor.getJSON();
-      const range = { from: pos, to: pos + node.nodeSize };
-      
-      if (type === 'delete') {
-         editor.commands.deleteRange(range);
-      } else if (type === 'replace') {
-         editor.chain().deleteRange(range).insertContentAt(range.from, newHtml).run();
+        // Record current state to revert back after we get the HTML
+        const oldJSON = editor.getJSON();
+        const range = { from: pos, to: pos + node.nodeSize };
+        
+        if (type === 'delete') {
+           editor.commands.deleteRange(range);
+        } else if (type === 'replace') {
+           editor.chain().deleteRange(range).insertContentAt(range.from, newHtml).run();
+        } else if (type === 'insert_before') {
+           editor.chain().insertContentAt(range.from, newHtml).run();
+        } else if (type === 'insert_after') {
+           editor.chain().insertContentAt(range.to, newHtml).run();
+        } else if (type === 'duplicate') {
+           editor.chain().insertContentAt(range.to, node.toJSON()).run();
+        } else if (type === 'move') {
+           const { toPos } = extraArgs || {};
+           if (toPos !== undefined) {
+             const origContent = node.toJSON();
+             // delete then insert
+             editor.chain().deleteRange(range).insertContentAt(toPos, origContent).run();
+           }
+        } else if (type === 'format_heading') {
+           const { level } = extraArgs || { level: 2 };
+           editor.chain().setTextSelection(pos + 1).toggleHeading({ level }).run();
+        } else if (type === 'convert_list') {
+           const { listType } = extraArgs || { listType: 'bullet' };
+           editor.chain().setTextSelection(pos + 1).toggleList(listType === 'ordered' ? 'orderedList' : 'bulletList', 'listItem').run();
+        } else if (type === 'format_text') {
+           // Basic formatting wrapper like placing spans and strongs via replacing HTML. For now just fallback to replace.
+           if (newHtml) editor.chain().deleteRange(range).insertContentAt(range.from, newHtml).run();
+        }
+        
+        const modifiedHtml = editor.getHTML();
+        const modifiedJSON = editor.getJSON();
+        const unchanged = JSON.stringify(oldJSON) === JSON.stringify(modifiedJSON);
+        
+        // Revert without emitting update
+        editor.commands.setContent(oldJSON, { emitUpdate: false });
+        
+        window.dispatchEvent(new CustomEvent('ai-surgical-response', { detail: { requestId, html: modifiedHtml, unchanged } }));
+      } catch (err: any) {
+        window.dispatchEvent(new CustomEvent('ai-surgical-response', { detail: { requestId, error: err.message, html: editor.getHTML() } }));
+        // Log to Firebase explicitly
+        try {
+          const logsRef = collection(db, 'projects', projectId, 'errorLogs');
+          addDoc(logsRef, {
+            context: 'Surgical API Error',
+            message: err.message,
+            createdAt: new Date().toISOString()
+          });
+        } catch(fe) {}
       }
-      
-      const modifiedHtml = editor.getHTML();
-      
-      // Revert without emitting update
-      editor.commands.setContent(oldJSON, { emitUpdate: false });
-      
-      window.dispatchEvent(new CustomEvent('ai-surgical-response', { detail: { requestId, html: modifiedHtml } }));
     };
 
     window.addEventListener('keydown', handleCmdK);
@@ -775,6 +823,10 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
             // It's HTML
             if (editor.getHTML() !== contentToLoad && !editor.isFocused) {
               editor.commands.setContent(contentToLoad, { emitUpdate: false });
+              if (searchWorkerRef.current) {
+                const blocks = buildSearchIndex(editor);
+                searchWorkerRef.current.postMessage({ action: 'INDEX', payload: { blocks } });
+              }
             }
           } else {
             // It's JSON
@@ -783,6 +835,10 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
               const currentContent = editor.getJSON();
               if (JSON.stringify(currentContent) !== JSON.stringify(parsed) && !editor.isFocused) {
                 editor.commands.setContent(parsed, { emitUpdate: false }); 
+                if (searchWorkerRef.current) {
+                  const blocks = buildSearchIndex(editor);
+                  searchWorkerRef.current.postMessage({ action: 'INDEX', payload: { blocks } });
+                }
               }
             } catch (e) {
               console.error("Error parsing canvas content", e);
@@ -1123,7 +1179,7 @@ export default function Canvas({ projectId, userId }: { projectId: string, userI
       <Omnibar 
         isOpen={isOmnibarOpen}
         onClose={() => setIsOmnibarOpen(false)}
-        workerRef={searchWorkerRef}
+        worker={searchWorker}
         onSelectCallback={handleOmnibarSelect}
       />
 

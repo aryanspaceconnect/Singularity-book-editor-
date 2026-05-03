@@ -6,8 +6,8 @@ export async function verifyApiKey(apiKey: string, modelId: string = AI_MODELS[0
     let activeApiKey = apiKey;
     if (!activeApiKey || activeApiKey.trim() === '') {
       // Use fallback
-      if (getProviderForModel(modelId) === 'openrouter') {
-        activeApiKey = process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY || '';
+      if (getProviderForModel(modelId) === 'nvidia') {
+        activeApiKey = "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";
       } else {
         activeApiKey = process.env.GEMINI_API_KEY || '';
       }

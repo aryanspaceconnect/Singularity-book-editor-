@@ -65,7 +65,8 @@ ${contextText.substring(0, 5000)}`,
       });
 
       const response = await chatWithHistory.sendMessage({ message: userMsg });
-      setMessages(prev => [...prev, { role: 'assistant', content: response.text || "No ideas generated." }]);
+      const extractedText = response.candidates?.[0]?.content?.parts?.filter((p: any) => p.text).map((p: any) => p.text).join('').trim() || '';
+      setMessages(prev => [...prev, { role: 'assistant', content: extractedText || "No ideas generated." }]);
     } catch (error) {
       console.error("Error generating ideas:", error);
       setMessages(prev => [...prev, { role: 'assistant', content: "An error occurred." }]);
